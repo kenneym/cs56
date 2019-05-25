@@ -45,15 +45,12 @@ signal c_count_en, s_count_en, rx_done_en, out_en, first: STD_LOGIC := '0';
 signal rsrx_ff, rsrx_s : STD_LOGIC := '0';
 constant baud : integer := 115200;
 constant clk_freq : integer := 10000000;
-signal target1 : integer := 0;
-signal target2 : integer := 0;
+constant n : integer := clk_freq/baud;
+constant n_half : integer := n/2;
 signal shift_reg : STD_LOGIC_VECTOR(9 downto 0) := "0000000000";
 signal out_reg : STD_LOGIC_VECTOR(7 downto 0) := "00000000";
 
-
 begin
-
-
     nextStateLogic: process(current_state, RsRx, c_count, s_count)
     begin
         next_state <= current_state;
@@ -71,12 +68,12 @@ begin
                 end if;
             when shifts =>
                 c_count_en <= '1';
-                if c_count = target1 then
+                if c_count = n_half then
                     if first = '0' then
                         s_count_en <= '1';
                         first <= '1';
                     end if;
-                elsif c_count = target2 then
+                elsif c_count = n then
                     s_count_en <= '1';
                 end if;
                 if s_count = "1010" then
@@ -101,6 +98,7 @@ begin
     stateUpdate: process(mclk)
     begin
         if rising_edge(mclk) then
+            current_state <= next_state;
             if c_count_en = '1' then
                 c_count <= c_count + 1;
             end if;

@@ -42,7 +42,7 @@ generic (
  end component;
  
  constant c_num_bits_ab :   integer := 4;
- constant c_num_bits_n  :   integer := 8;
+ constant c_num_bits_n  :   integer := 4;
  constant c_period      :   time := 20 ns; 
  
  signal mclk             :  STD_LOGIC := '0';
@@ -74,15 +74,15 @@ BEGIN
 end process clk_proc;
 
 stim_proc : process
-BEGIn
+begin
     
     wait for 20 ns;
     
-    a <= "0100";
+    a <= "1000";
     wait for 20 ns;
-    b <= "1000";
+    b <= "0110";
     wait for 20 ns;
-    n <= "00001010";
+    n <= "1010";
     wait for 20 ns;
     toggle <= '1';
     wait for 40 ns;

@@ -19,18 +19,19 @@ end montgomery;
 architecture Behavioral of montgomery is
 
 signal a_c, b_c : unsigned(num_bits_ab-1 downto 0) := (others => '0');
-signal n_c, m, o_reg, m_temp   : unsigned(num_bits_n-1 downto 0) := (others => '0');
+signal o_reg, n_c  : unsigned(num_bits_n-1 downto 0) := (others => '0');
+signal m       : unsigned(num_bits_n-1 downto 0) := (others => '0');
 signal l_en, m_en, o_en, count_en, m2_en, mn2_en, mn_en   : std_logic := '0';
 signal counts   :   unsigned(num_bits_ab-1 downto 0) := (others => '0');
 signal count    :   integer := 0;
 
-type state_type is (nop, multiply, check, mn);
+type state_type is (nop, multiply, check);
 signal current_state, next_state : state_type := nop;
 
 
 begin 
 
-nextStateLogic: process(current_state, toggle, b_c, M_temp, count)
+nextStateLogic: process(current_state, toggle, b_c, M, count)
 begin
     
     next_state <= current_state;
@@ -51,8 +52,6 @@ begin
                 next_state <= multiply;
                 l_en <= '1';
         end if;
-        
-        m <= (others => '0');
 
     
      when multiply =>
@@ -68,17 +67,17 @@ begin
         end if;
      
      when check =>
-        if (M_temp(0) = '1') then
+        if (M(0) = '1') then
            m2_en <= '1';
            next_state <= multiply;
         else
-            mn_en <= '1';
-            next_state <= mn;
+            mn2_en <= '1';
+            next_state <= multiply;
         end if;
      
-     when mn =>
-        mn2_en <= '1';
-        next_state <= multiply;
+    -- when mn =>
+      --  mn2_en <= '1';
+        --next_state <= multiply;
      end case;
      
      
@@ -108,16 +107,16 @@ begin
             M <= unsigned(shift_right(M, 1));
              --M <= '0' & M(M'left downto 1);
          end if;
-         if mn_en = '1' then
-            M_temp <= unsigned(M + n_c);
-         end if;
+        -- if mn_en = '1' then
+     --       M_temp <= unsigned(M + n_c);
+        -- end if;
          if mn2_en = '1' then
-            M <= unsigned(shift_right((M_temp), 1));
+            M <= unsigned(shift_right(M+n_c,1));
            -- M <= '0' & (M(m'left downto 1) + n_c(n_c'left downto 1));
          end if; 
          
          if o_en = '1' then
-            o_reg <= m;
+            o_reg <= m(m'left downto 0);
          end if;
          
      end if;

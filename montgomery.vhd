@@ -13,24 +13,24 @@ entity montgomery is
           b       :     in STD_LOGIC_VECTOR(num_bits_ab-1 downto 0);
           n       :     in STD_LOGIC_VECTOR(num_bits_n-1 downto 0);
           toggle  :     in STD_LOGIC;
-          modmult  :     out STD_LOGIC_VECTOR(7 downto 0));
+          modmult  :     out STD_LOGIC_VECTOR(num_bits_n-1 downto 0));
 end montgomery;
 
 architecture Behavioral of montgomery is
 
 signal a_c, b_c : unsigned(num_bits_ab-1 downto 0) := (others => '0');
-signal n_c, m, o_reg   : unsigned(num_bits_n-1 downto 0) := (others => '0');
-signal l_en, m_en, o_en, count_en, m2_en, mn2_en   : std_logic := '0';
+signal n_c, m, o_reg, m_temp   : unsigned(num_bits_n-1 downto 0) := (others => '0');
+signal l_en, m_en, o_en, count_en, m2_en, mn2_en, mn_en   : std_logic := '0';
 signal counts   :   unsigned(num_bits_ab-1 downto 0) := (others => '0');
 signal count    :   integer := 0;
 
-type state_type is (nop, multiply, check);
+type state_type is (nop, multiply, check, mn);
 signal current_state, next_state : state_type := nop;
 
 
 begin 
 
-nextStateLogic: process(current_state)
+nextStateLogic: process(current_state, toggle, b_c, M_temp, count)
 begin
     
     next_state <= current_state;
@@ -41,19 +41,23 @@ begin
     count_en <= '0';
     m2_en <= '0';
     mn2_en <= '0';
+    mn_en <= '0';
     
     case (current_state) is
     
     when nop =>
-        m <= (others => '0');
+    
         if toggle = '1' then
-            l_en <= '1';
-            next_state <= multiply;
+                next_state <= multiply;
+                l_en <= '1';
         end if;
+        
+        m <= (others => '0');
+
     
      when multiply =>
         count_en <= '1';
-        if count = num_bits_ab then
+        if count = a_c'left then
             o_en <= '1';
             next_state <= nop;
         else
@@ -64,12 +68,17 @@ begin
         end if;
      
      when check =>
-        if (M(0) = '1') then
+        if (M_temp(0) = '1') then
            m2_en <= '1';
+           next_state <= multiply;
         else
-            mn2_en <= '1';
+            mn_en <= '1';
+            next_state <= mn;
         end if;
-        next_state <= check;
+     
+     when mn =>
+        mn2_en <= '1';
+        next_state <= multiply;
      end case;
      
      
@@ -78,7 +87,7 @@ end process nextStateLogic;
 stateUpdate: process(mclk)
 begin
     if rising_edge(mclk) then
-    
+        
         current_state <= next_state;
         
         if count_en = '1' then
@@ -92,15 +101,19 @@ begin
          end if;
          
          if m_en = '1' then
-            M <= M + a_c;  
+            --M <= M + a_c;  
          end if;
          
          if m2_en = '1' then
-             M <= '0' & M(M'left downto 1);
+            M <= unsigned(shift_right(M, 1));
+             --M <= '0' & M(M'left downto 1);
          end if;
-         
+         if mn_en = '1' then
+            M_temp <= unsigned(M + n_c);
+         end if;
          if mn2_en = '1' then
-            M <= '0' & (M(m'left downto 1) + n_c(n_c'left downto 1));
+            M <= unsigned(shift_right((M_temp), 1));
+           -- M <= '0' & (M(m'left downto 1) + n_c(n_c'left downto 1));
          end if; 
          
          if o_en = '1' then

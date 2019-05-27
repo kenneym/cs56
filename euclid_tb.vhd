@@ -1,14 +1,13 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
+-- Engineer: Jake Epstein
 -- 
 -- Create Date: 05/25/2019 02:27:26 PM
--- Design Name: 
+-- Design Name: Test Bench for Euclid's algorithm
 -- Module Name: euclid_tb - Behavioral
--- Project Name: 
+-- Project Name: RSA Encryption - ENGS56 Final Project
 -- Target Devices: 
 -- Tool Versions: 
--- Description: 
+-- Description: This is a testbench for Euclid's algorithm, which finds the greatest common denominator between two positive integers
 -- 
 -- Dependencies: 
 -- 
@@ -21,15 +20,6 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
 
 entity euclid_tb is
 end euclid_tb;

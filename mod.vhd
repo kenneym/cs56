@@ -1,3 +1,22 @@
+----------------------------------------------------------------------------------
+-- Engineers: Matt Kenney and Jake Epstein
+-- 
+-- Create Date: 05/26/2019 
+-- Design Name: 
+-- Module Name: modulus - Behavioral
+-- Project Name: CS56 Final Project
+-- Target Devices: 
+-- Tool Versions: 
+-- Description: 
+-- 
+-- Dependencies: 
+-- 
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:
+-- 
+----------------------------------------------------------------------------------
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -12,6 +31,7 @@ entity modulus is
 		  b_in  	: 	in STD_LOGIC_VECTOR(data_size - 1 downto 0);
 		  new_data	: 	in STD_LOGIC;
 		  ---------------------------------------------------------
+		  done 		: 	out STD_LOGIC;
 		  q_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0);
 		  r_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0));
 		
@@ -76,11 +96,13 @@ BEGIN
 		if rising_edge(clk) then 
 			
 			compute_finshed <= '0';
+			done <= '0';
 
 			if load_en = '1' then
 				a <= UNSIGNED(a_in);
 				b <= UNSIGNED(b_in);
 				q <= (others => '0'); -- reset quotient
+				done <= '0';
 			end if;
 	
 			if compute_en = '1' then
@@ -94,6 +116,7 @@ BEGIN
 			end if;
 	
 			if output_en = '1' then
+				done <= '1';
 				r_out <= STD_LOGIC_VECTOR(a); -- what's left of a is the remainder
 				q_out <= STD_LOGIC_VECTOR(q); 
 	

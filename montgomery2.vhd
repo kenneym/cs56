@@ -21,8 +21,8 @@ architecture Behavioral of montgomery is
 signal a_c, b_c : unsigned(num_bits_ab-1 downto 0) := (others => '0');
 signal o_reg, n_c  : unsigned(num_bits_n-1 downto 0) := (others => '0');
 signal m, q, pad      : unsigned(num_bits_n downto 0) := (others => '0');
-signal temp    : unsigned(2*num_bits_n downto 0);
-signal m_temp   : unsigned(2*num_bits_n+1 downto 0); 
+signal temp    : unsigned(2*num_bits_n downto 0) := (others => '0');
+signal m_temp   : unsigned(2*num_bits_n+1 downto 0) := (others => '0'); 
 signal l_en, m_en, o_en, count_en, m2_en, mn2_en, mn_en, m3_en, qc_en  : std_logic := '0';
 signal counts   :   unsigned(num_bits_ab-1 downto 0) := (others => '0');
 signal count    :   integer := 0;
@@ -130,7 +130,7 @@ begin
          
          if o_en = '1' then
             if unsigned(M) >= unsigned(N) then
-                o_reg <= unsigned(n) - m(m'left -1 downto 0);
+                o_reg <= m(m'left -1 downto 0) - unsigned(n);
             else
                 o_reg <= m(m'left -1 downto 0);
             end if;

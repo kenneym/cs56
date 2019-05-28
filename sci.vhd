@@ -41,7 +41,7 @@ type state_type is (waits, shifts, writes);
 signal current_state, next_state : state_type := waits;
 signal c_count :integer := 0;
 signal s_count : unsigned(3 downto 0) := "0000";
-signal c_count_en, s_count_en, rx_done_en, out_en, first: STD_LOGIC := '0';
+signal c_count_en, s_count_en, rx_done_en, out_en, first, c_count_r: STD_LOGIC := '0';
 signal rsrx_ff, rsrx_s : STD_LOGIC := '0';
 constant baud : integer := 115200;
 constant clk_freq : integer := 10000000;
@@ -58,9 +58,10 @@ begin
         s_count_en <= '0';
         out_en <= '0';
         rx_done_en <= '0';
+        c_count_r <= '0';
         case (current_state) is
             when waits =>
-                c_count <= 0;
+                c_count_r <= '1';
                 s_count <= "0000";
                 first <= '0';
                 if RsRx_S = '0' then
@@ -112,6 +113,9 @@ begin
             end if;
             if rx_done_en = '1' then
                 rx_done_tick <= '1';
+            end if;
+            if c_count_r = '1' then
+                c_count <= 0;
             end if;
         end if;
      end process stateUpdate;

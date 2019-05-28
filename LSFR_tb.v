@@ -59,7 +59,7 @@ begin
     
     wait for 20ns;
     
-    seed <= "00001";
+    seed <= "00011";
     
     wait for 20ns;
     wait;

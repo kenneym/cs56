@@ -1,14 +1,13 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
+-- Engineer: Jake Epstein
 -- 
 -- Create Date: 05/25/2019 02:27:26 PM
 -- Design Name: 
 -- Module Name: euclid - Behavioral
--- Project Name: 
+-- Project Name: RSA Encryption - ENGS31 Final Project
 -- Target Devices: 
 -- Tool Versions: 
--- Description: 
+-- Description: Euclid's algorithm, which finds the greatest common denominator between two positive integers
 -- 
 -- Dependencies: 
 -- 

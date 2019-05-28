@@ -20,13 +20,14 @@ architecture Behavioral of montgomery is
 
 signal a_c, b_c : unsigned(num_bits_ab-1 downto 0) := (others => '0');
 signal o_reg, n_c  : unsigned(num_bits_n-1 downto 0) := (others => '0');
-signal m, q      : unsigned(num_bits_n downto 0) := (others => '0');
-signal temp      : unsigned((m'length + q'length)-1 downto 0);
+signal m, q, pad      : unsigned(num_bits_n downto 0) := (others => '0');
+signal temp    : unsigned(2*num_bits_n downto 0);
+signal m_temp   : unsigned(2*num_bits_n+1 downto 0); 
 signal l_en, m_en, o_en, count_en, m2_en, mn2_en, mn_en, m3_en, qc_en  : std_logic := '0';
 signal counts   :   unsigned(num_bits_ab-1 downto 0) := (others => '0');
 signal count    :   integer := 0;
 
-type state_type is (nop, multiply, compute, check);
+type state_type is (nop, add, compute, check);
 signal current_state, next_state : state_type := nop;
 
 
@@ -51,12 +52,12 @@ begin
     when nop =>
     
         if toggle = '1' then
-                next_state <= multiply;
+                next_state <= add;
                 l_en <= '1';
         end if;
 
     
-     when multiply =>
+     when add =>
      
         count_en <= '1';
         if count = a_c'left then
@@ -81,7 +82,7 @@ begin
      else
             m3_en <= '1';
      end if;
-           next_state <= multiply;
+           next_state <= add;
      end case;
      
      
@@ -92,6 +93,9 @@ begin
     if rising_edge(mclk) then
         
         current_state <= next_state;
+        
+        M <= '0' & M_temp(M'left downto 1);
+        M <= '0' & M_temp(M'left downto 1);
         
         if count_en = '1' then
             count <= count + 1;
@@ -117,18 +121,16 @@ begin
          end if;
          
          if m2_en = '1' then
-            M <= unsigned(shift_right(unsigned(M) + unsigned(A_C) + unsigned(temp), 1));
+            M_temp <= (pad & M) + (pad & '0' & A_C) + temp;
          end if;
          
          if m3_en = '1' then
-            M <= unsigned(shift_right(M + A_C + temp, 1));
+            M_temp <= (pad & M) + temp;
          end if;
          
          if o_en = '1' then
-            if unsigned(M) = unsigned(N) then
+            if unsigned(M) >= unsigned(N) then
                 o_reg <= unsigned(n) - m(m'left -1 downto 0);
-            elsif unsigned(M) > unsigned(N) then
-                 o_reg <= unsigned(n) - m(m'left -1 downto 0);
             else
                 o_reg <= m(m'left -1 downto 0);
             end if;

@@ -162,6 +162,7 @@ begin
 			
 
 		if output_en = '1' then
+
 			-- compute x and y one more time:
 			x <= y;
 			mult_y <= x - (SIGNED(q) * y);

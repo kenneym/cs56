@@ -3,12 +3,11 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity extgcd is
-
+	
 	GENERIC( data_size  : integer := 8); -- set for test key
-
-    PORT (clk 		:   in STD_LOGIC;
-          new_data 	:   in STD_LOGIC;
-          a_in 		:   in STD_LOGIC_VECTOR(data_size - 1 downto 0);  --  phi of n
+	PORT (clk 		:   in STD_LOGIC;
+		  new_data 	:   in STD_LOGIC;
+		  a_in 		:   in STD_LOGIC_VECTOR(data_size - 1 downto 0);  --  phi of n
           b_in 		:   in STD_LOGIC_VECTOR(data_size - 1 downto 0);  --  public key 'e'
 		  -----------------------------------------------------------
 		  done 		: 	out STD_LOGIC;

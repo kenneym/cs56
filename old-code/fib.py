@@ -18,10 +18,9 @@ def fib_recursions(n):
 
     # Find index of smallest fibonacci number larger than n
     while a < n:
-        a, b = b, a+b
+        a, b = b, a + b
 #       print(str(a) + " ")
         index += 1
-    
     return index - 2 # subtract by 2 to obtain number of recursions
 
 reg_sizes = open("reg_sizes.txt", 'w')
@@ -29,7 +28,7 @@ reg_sizes = open("reg_sizes.txt", 'w')
 # phi of n, the larger of the two inputs to the Extended 
 # Euclid's Algorithm, is always half the bits of the key
 
-key_16 = 2**8
+key_16 = 2**
 key_64 = 2**32 
 key_128 = 2**64
 key_256 = 2**256
@@ -38,3 +37,5 @@ reg_sizes.write("16-bit test key: " + str(fib_recursions(key_16)) + "\n")
 reg_sizes.write("64-bit key: " + str(fib_recursions(key_64)) + "\n")
 reg_sizes.write("128-bit key: " + str(fib_recursions(key_128)) + "\n")
 reg_sizes.write("256-bit key: " + str(fib_recursions(key_256)) + "\n")
+
+reg_sizes.close()

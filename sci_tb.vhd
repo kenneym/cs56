@@ -57,15 +57,15 @@ uut : sci PORT MAP(
 clk_proc :process
 BEGIN
     mclk <= '0';
-    wait for 5ns;
+    wait for 5 ns;
     mclk <= '1';
-    wait for 5ns;
+    wait for 5 ns;
 end process clk_proc;
 
 stim_proc: process
 begin
 RsRx <= '0';
-wait for 20ns;
+wait for 20 ns;
 
 wait;
 end process stim_proc;

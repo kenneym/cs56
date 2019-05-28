@@ -23,13 +23,12 @@ architecture Behavioral of extgcd is
 type state_type is (nop, divide, hold, check);
 signal current_state, next_state : state_type := nop;
 
-signal a, b, g, r, q: UNSIGNED(data_size -1 downto 0) :=  (others => '0');  		-- To compute gcd
-signal y : SIGNED(data_size -1 downto 0) :=  (others => '0');               		-- Extended portion
-signal x : SIGNED(data_size -1 downto 0) :=  (0 => '1', others => '0');    			-- Extended portion
-signal mult_y : SIGNED((data_size * 2) -1 downto 0) := (others => '0'); 	-- large bit signal
-                                                                            		-- used for multiplication
-
-signal mod_en, load_en, output_en, iterate_en, fetch_en : STD_LOGIC := '0';			-- Enable signals
+signal a, b, g, r, q: UNSIGNED(data_size -1 downto 0) :=  (others => '0');      -- To compute gcd
+signal x1, y0: SIGNED(data_size -1 downto 0) :=  (others => '0');               -- Extended portion
+signal x0, y1 : SIGNED(data_size -1 downto 0) :=  (0 => '1', others => '0');    -- Extended portion
+signal mult_x, mult_y : SIGNED((data_size * 2) -1 downto 0) := (others => '0'); -- larger bit signals
+                                                                                -- used for multiplication
+signal mod_en, load_en, output_en, iterate_en, fetch_en : STD_LOGIC := '0';	    -- Enable signals
     
 
 -- Interface with modulus component
@@ -60,6 +59,8 @@ mod_component: modulus port map(
 	done => mod_finished,
 	q_out => q_out,
 	r_out => r_out);
+
+
 
 nextStateLogic: process(current_state, new_data, mod_finished)
 begin
@@ -120,18 +121,21 @@ end process state_update;
 gcd_datapath: process(clk)
 begin
 	if rising_edge(clk) then
+	
+         
         
 		-- Reset monopulse mod operations:
 		mod_data <= '0';
-        y <= mult_y(7 downto 0);
 
 		if load_en = '1' then
 
 			done <= '0';
             a <= UNSIGNED(a_in);
             b <= UNSIGNED(b_in);
-			y <= (others => '0');  		  -- reset x & y values
-			x <= (0 => '1', others => '0');
+			x1 <= (others => '0');  		  -- reset x & y values
+			y0 <= (others => '0');
+			x0 <= (0 => '1', others => '0');
+			y1 <= (0 => '1', others => '0');
 
         end if;
 
@@ -153,21 +157,20 @@ begin
 
 		if iterate_en = '1' then
 
-			-- find gcd(b,r) recursively until gcd is reached
+			-- Continue euclid's extended algorithm to find x & y
 			a <= b;
 			b <= r;
+			x0 <= x1;
+			y0 <= y1;
+			
+		    mult_x <= x0 - (SIGNED(q) * x1);
+			mult_y <= y0 - (SIGNED(q) * y1);
 
-			-- Continue euclid's extended algorithm to find x & y
-			x <= y;
-            mult_y <= x - (SIGNED(q) * y);
 
 		end if;
 			
 
-		if output_en = '1' then
-			-- compute x and y one more time:
-			x <= y;
-            mult_y <= x - (SIGNED(q) * y);
+        if output_en = '1' then
             g <= b; -- a if finally divisiable by b, thus b is the gcd
 			done <= '1';
 			-- NOTE: (y mod phi of n gives secret key d)
@@ -177,22 +180,21 @@ begin
 
 end process gcd_datapath;
 
---update_vals: process(clk)
---begin
---	if rising_edge(clk) then
---        
---        if iterate_en = '1' then
---            mult_x <= x0 - (SIGNED(q) * x1);
---            mult_y <= y0 - (SIGNED(q) * y1);jj
---        end if;
---        
---    end if;
---end process update_vals;
-
-
+update_vals: process(clk)
+begin
+	if rising_edge(clk) then
+		x1 <= mult_x(data_size -1 downto 0);
+        y1 <= mult_y(data_size -1 downto 0);
         
+        if iterate_en = '1' then
+            mult_x <= x0 - (SIGNED(q) * x1);
+            mult_y <= y0 - (SIGNED(q) * y1);
+        end if;
+    end if;
+end process update_vals;
+
 g_out <= STD_LOGIC_VECTOR(g);
-x_out <= STD_LOGIC_VECTOR(x);
-y_out <= STD_LOGIC_VECTOR(y);
+x_out <= STD_LOGIC_VECTOR(x0);
+y_out <= STD_LOGIC_VECTOR(y0);
 
 end Behavioral;

@@ -49,6 +49,7 @@ end component;
 signal clk : STD_LOGIC := '0';
 signal new_data : STD_LOGIC := '0';
 signal a_in, b_in, q_out, r_out : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
+signal clk_period : time := 10 ns;
 
 
 begin
@@ -73,14 +74,26 @@ end process clk_proc;
 stim_proc : process
 begin
 
-    wait for 10 ns;
+
+	-- 2 remainder 1
     a_in <= "00000111"; -- 7
     b_in <= "00000011"; -- 3
-    wait for 10 ns;
     new_data <= '1';
-    wait for 10 ns;
+    wait for clk_period;
     new_data <= '0';
+    wait for clk_period * 10;
+
+	-- 18 remainder 2
+	a_in <= "10000000"; -- 128
+    b_in <= "00000111"; -- 7
+    new_data <= '1';
+    wait for clk_period;
+    new_data <= '0';
+
+
     wait;
+
+
 end process stim_proc;
 
 end testbench;

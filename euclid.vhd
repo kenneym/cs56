@@ -4,7 +4,7 @@
 -- 
 -- Create Date: 05/25/2019 02:27:26 PM
 -- Design Name: 
--- Module Name: euclid_tb - Behavioral
+-- Module Name: euclid - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 

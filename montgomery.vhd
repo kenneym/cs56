@@ -100,7 +100,7 @@ begin
          end if;
          
          if m_en = '1' then
-            --M <= M + a_c;  
+            M <= M + a_c;  
          end if;
          
          if m2_en = '1' then
@@ -116,7 +116,7 @@ begin
          end if; 
          
          if o_en = '1' then
-            o_reg <= unsigned(n) - m(m'left -1 downto 0);
+            o_reg <= m(m'left -1 downto 0) - unsigned(n);
          end if;
          
      end if;

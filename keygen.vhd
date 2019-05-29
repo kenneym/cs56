@@ -2,7 +2,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity keygen is
+ENTITY keygen is
 	
 	GENERIC(key_size	: integer := 16);
 
@@ -15,6 +15,11 @@ entity keygen is
 			d 			:	out STD_LOGIC_VECTOR(key_size downto 0));
 end keygen;
 
-			
+
+ARCHITECTURE behavioral of keygen is
 
 
+begin
+
+
+end behavioral;

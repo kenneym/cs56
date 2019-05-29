@@ -58,9 +58,11 @@ begin
     enable <= '1';
     
     wait for 20ns;
-    
-    seed <= "00011";
-    
+    seed_en <= '1';
+    wait for 5ns;
+    seed <= "01011";
+    wait for 5ns;
+    seed_en <= '0'; 
     wait for 20ns;
     wait;
 end process stim_proc;

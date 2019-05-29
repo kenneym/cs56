@@ -88,9 +88,18 @@ begin
     b_in <= "00000111"; -- 7
     new_data <= '1';
     wait for clk_period;
-    new_data <= '0';
-
-
+    new_data <= '0';    
+    wait for clk_period * 30;
+    
+    -- 43 remainder 0
+	a_in <= "10000001"; -- 129
+    b_in <= "00000011"; -- 3
+    new_data <= '1';
+    wait for clk_period;
+    new_data <= '0';    
+    wait for clk_period * 10;
+    
+    
     wait;
 
 

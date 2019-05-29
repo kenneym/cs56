@@ -121,7 +121,7 @@ begin
 		
 		-- Reset monopulse mod operations:
 		mod_data <= '0';
-		y <= mult_y(7 downto 0);
+		y <= mult_y(y'left downto 0);
 		
 		if load_en = '1' then
 			done <= '0';

@@ -56,10 +56,11 @@ begin
     wait for 20ns;
     
     enable <= '1';
-    
-    wait for 20ns;
-    
-    seed <= "00011";
+    seed_en <= '1';
+    seed <= "11011";
+    wait for c_period;
+     seed_en <= '0';
+     
     
     wait for 20ns;
     wait;

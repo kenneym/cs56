@@ -35,7 +35,7 @@ entity LFSR is
            seed_en : in STD_LOGIC;
            data : out STD_LOGIC_VECTOR(num_bits -1 downto 0);
            data_done : out STD_LOGIC);
-    end LFSR;
+end LFSR;
 
 architecture Behavioral of LFSR is
 

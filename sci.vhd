@@ -1,4 +1,4 @@
-----------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------
 -- Company: 
 -- Engineer: 
 -- 
@@ -41,7 +41,7 @@ type state_type is (waits, shifts, writes);
 signal current_state, next_state : state_type := waits;
 signal c_count :integer := 0;
 signal s_count : unsigned(3 downto 0) := "0000";
-signal c_count_en, s_count_en, rx_done_en, out_en, first, c_count_r: STD_LOGIC := '0';
+signal c_count_en, s_count_en, rx_done_en, out_en, first, c_count_r, s_count_r: STD_LOGIC := '0';
 signal rsrx_ff, rsrx_s : STD_LOGIC := '0';
 constant baud : integer := 115200;
 constant clk_freq : integer := 10000000;
@@ -51,7 +51,7 @@ signal shift_reg : STD_LOGIC_VECTOR(9 downto 0) := "0000000000";
 signal out_reg : STD_LOGIC_VECTOR(7 downto 0) := "00000000";
 
 begin
-    nextStateLogic: process(current_state, RsRx, c_count, s_count)
+    nextStateLogic: process(current_state, RsRx, RsRx_S, c_count, s_count)
     begin
         next_state <= current_state;
         c_count_en <= '0';
@@ -59,10 +59,11 @@ begin
         out_en <= '0';
         rx_done_en <= '0';
         c_count_r <= '0';
+        s_count_r <= '0';
         case (current_state) is
             when waits =>
                 c_count_r <= '1';
-                s_count <= "0000";
+                s_count_r <= '1';
                 first <= '0';
                 if RsRx_S = '0' then
                     next_state <= shifts;
@@ -76,6 +77,7 @@ begin
                     end if;
                 elsif c_count = n then
                     s_count_en <= '1';
+                    c_count_r <= '1';
                 end if;
                 if s_count = "1010" then
                     next_state <= writes;
@@ -116,6 +118,9 @@ begin
             end if;
             if c_count_r = '1' then
                 c_count <= 0;
+            end if;
+            if s_count_r = '1' then
+                s_count <= "0000";
             end if;
         end if;
      end process stateUpdate;

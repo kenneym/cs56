@@ -50,23 +50,23 @@ signal mod_en, load_en, output_en, iterate_en, fetch_en, res_en, sh_en, mul_en, 
 -- Interface with modulus component
 signal mod_data, mod_finished: STD_LOGIC;
 
-signal b_mod, q_out, r_out, b_mod_temp, r_out_temp : STD_LOGIC_VECTOR(num_bits -1 downto 0);
-signal a_mod                           : STD_LOGIC_VECTOR(2*num_bits downto 0);
+signal b_mod, q_out, r_out, b_mod_temp, r_out_temp : STD_LOGIC_VECTOR(2*num_bits -1 downto 0);
+signal a_mod                           : STD_LOGIC_VECTOR(2*num_bits-1 downto 0);
 
-signal a_mod_temp : UNSIGNED(2*num_bits downto 0);
+signal a_mod_temp : UNSIGNED(2*num_bits-1 downto 0);
 
 
 -- Computes a / b = q remainder r.
 component modulus
-	GENERIC(num_bits  : integer := 8); -- set for test key
+	GENERIC(data_size  : integer := 2*num_bits); -- set for test key
     PORT (clk 		: 	in STD_LOGIC;
-          a_in 		: 	in STD_LOGIC_VECTOR(2*num_bits downto 0); -- a should be >= b
-		  b_in  	: 	in STD_LOGIC_VECTOR(num_bits - 1 downto 0);
+          a_in 		: 	in STD_LOGIC_VECTOR(2*num_bits -1  downto 0); -- a should be >= b
+		  b_in  	: 	in STD_LOGIC_VECTOR(2*num_bits - 1 downto 0);
 		  new_data	: 	in STD_LOGIC;
 		  ---------------------------------------------------------
 		  done 		: 	out STD_LOGIC;
-		  q_out 	: 	out STD_LOGIC_VECTOR(num_bits - 1 downto 0);
-		  r_out 	: 	out STD_LOGIC_VECTOR(num_bits - 1 downto 0));
+		  q_out 	: 	out STD_LOGIC_VECTOR(2*num_bits - 1 downto 0);
+		  r_out 	: 	out STD_LOGIC_VECTOR(2*num_bits - 1 downto 0));
 end component;
 
 begin
@@ -80,7 +80,7 @@ mod_component: modulus port map(
 	q_out => q_out,
 	r_out => r_out);
 	
-nextStateLogic: process(current_state, en)
+nextStateLogic: process(current_state, en, mod_finished, res2res, x2x, o_done, y_c, y_c_zero)
 begin
 
 next_state <= current_state;
@@ -93,13 +93,14 @@ mul_en <= '0';
 h_load <= '0';
 output_en <= '0';
 res_set <= '0';
-x2x <= '0';
+x_set <= '0';
 
 case(current_state) is
     when nop =>
     if en ='1' then
         load_en <= '1';
         next_state <= hold;
+        x2x <= '1';
     end if;
         
     when modu =>
@@ -117,16 +118,20 @@ case(current_state) is
         
   when check =>
     --while y > 0
+    res2res <= '0';
+    x2x <= '0';
   if o_done = '0' then
     if y_c > y_c_zero then
         -- if y is odd
         if (y_c(0) = '1') then
             res_en <= '1';
+            res2res <= '1';
             next_state <= hold;
             o_done <= '1';
         end if;
-   end if;
         next_state <= shift;
+   end if;
+     next_state <= nop; 
     else
         output_en <= '1';
         next_state <= nop;
@@ -136,6 +141,7 @@ case(current_state) is
         --shift y (y=y/2)
         sh_en <= '1';
         mul_en <= '1';
+        x2x <= '1';
         o_done <= '0';
         next_state <= hold;
         
@@ -158,37 +164,36 @@ begin
     if rising_edge(mclk) then
         if h_load = '1' then
             a_mod <= STD_LOGIC_VECTOR(a_mod_temp);
-            b_mod <= STD_LOGIC_VECTOR(p_c);
+            b_mod <= STD_LOGIC_VECTOR(y_c_zero & p_c);
         end if;
         if sh_en = '1' then
             y_c <= '0' & y_c(y_c'left downto 1);
         end if;
         if mul_en = '1' then
             a_mod_temp <= x_c * x_c;
-            x2x <= '1';
+           -- x2x <= '1';
         end if;
         if load_en = '1' then
             y_c <= UNSIGNED(y);
             x_c <= UNSIGNED(x);
             p_c <= UNSIGNED(p);
-            a_mod_temp <= UNSIGNED(x);
+            a_mod_temp <= UNSIGNED(y_c_zero) & UNSIGNED(x);
         end if;
         if fetch_en = '1' then
             r_out_temp <= r_out;
         end if;
         if res_en = '1' then
             a_mod_temp <= res * x_c;
-            res2res <= '1';
         end if;
         if mod_en = '1' then
             mod_data <= '1';
         end if;
         if res_set = '1' then
-            res <= unsigned(r_out);
+            res <= unsigned(r_out(num_bits-1 downto 0));
             res2res <= '0';
         end if;
         if x_set = '1' then
-            x_c <= unsigned(r_out);
+            x_c <= unsigned(r_out(num_bits-1 downto 0));
             res2res <= '0';
         end if;
         if output_en = '1' then

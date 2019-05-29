@@ -21,10 +21,7 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
@@ -48,11 +45,47 @@ component modexp is
           done      :     out STD_LOGIC);
 end component;
 
+
+constant c_num_bits   : integer := 4;
 signal mclk, done, en : STD_LOGIC := '0';
-signal x, y, p , mod_exp : STD_LOGIC_VECTOR := (others => '0'); 
+signal x, y, p , mod_exp : STD_LOGIC_VECTOR(c_num_bits-1 downto 0) := (others => '0'); 
    
 
 begin
+
+uut : modexp GENERIC MAP (
+      num_bits => c_num_bits) 
+      PORT MAP(
+      mclk => mclk,
+      en => en,
+      x => x,
+      y => y,
+      p => p,
+      mod_exp => mod_exp,
+      done => done);
+      
+clk_proc : process
+BEGIN
+    mclk <= '0';
+    wait for 5ns;
+    mclk <= '1';
+    wait for 5ns;
+end process clk_proc;
+
+stim_proc : process
+begin
+    wait for 10 ns;
+    x <= "0111";
+    y <= "0110";
+    p <= "1000";
+    wait for 20 ns;
+    en <= '1';
+    wait for 20 ns;
+    en <= '0'; 
+    
+    wait;
+end process stim_proc; 
+    
 
 
 end testbench;

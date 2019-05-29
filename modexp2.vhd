@@ -28,7 +28,7 @@ entity modexp2 is
     generic (
     num_bits    :   integer := 8);
     
-    Port (mclk      :     in  STD_LOGIC;
+    Port (clk      :     in  STD_LOGIC;
           en        :     in  STD_LOGIC;
           x         :     in  STD_LOGIC_VECTOR(num_bits-1 downto 0);
           y         :     in  STD_LOGIC_VECTOR(num_bits-1 downto 0);
@@ -44,7 +44,7 @@ type state_type is (load, modx_load, modx_go, modx, whiles, resx, modres_load, m
 signal current_state, next_state : state_type := load;
 
 signal x_c, y_c, p_c, y_c_zero,res, res_out      :       UNSIGNED(num_bits-1 downto 0) := (others => '0');
-signal res_temp, x_temp                               :       UNSIGNED(2*num_bits-1 downto 0) := (others => '0');
+signal res_temp, x_temp                          :       UNSIGNED(2*num_bits-1 downto 0) := (others => '0');
     
 
 -- Interface with modulus component
@@ -72,7 +72,7 @@ signal l_en, modx_en, resx_en, modrex_en, output_en, y_shift_en, x_multi_en, mod
 begin
 
 mod_component: modulus port map(
-	clk => mclk,
+	clk => clk,
 	a_in => a_mod,
 	b_in => b_mod,
 	new_data => mod_data,
@@ -175,16 +175,16 @@ end case;
 
 end process nextStateLogic; 
 
-stateUpdate : process(mclk)
+stateUpdate : process(clk)
 begin
-    if rising_edge(mclk) then
+    if rising_edge(clk) then
         current_state <= next_state;
     end if;
 end process stateUpdate;
 
-modexpDataPath : process(mclk)
+modexpDataPath : process(clk)
 begin
-    if rising_edge(mclk) then
+    if rising_edge(clk) then
         mod_data <= '0';
         done <= '0';
         
@@ -192,7 +192,7 @@ begin
             x_c <= UNSIGNED(x);
             y_c <= UNSIGNED(y);
             p_c <= UNSIGNED(p);
-            res <= res(num_bits-2 downto 0) & '1';
+            res <= (0 => '1', others => '0') ;
         end if;
         
         if modx_load_en = '1' then

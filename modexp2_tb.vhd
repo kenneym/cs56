@@ -14,7 +14,7 @@ architecture testbench of modexp2_tb is
 
 component modexp2 is
     GENERIC(num_bits :integer := 8);
-     Port (mclk      :     in  STD_LOGIC;
+     Port (clk      :     in  STD_LOGIC;
           en        :     in  STD_LOGIC;
           x         :     in  STD_LOGIC_VECTOR(num_bits-1 downto 0);
           y         :     in  STD_LOGIC_VECTOR(num_bits-1 downto 0);
@@ -26,7 +26,7 @@ end component;
 
 
 constant c_num_bits   : integer := 4;
-signal mclk, done, en : STD_LOGIC := '0';
+signal clk, done, en : STD_LOGIC := '0';
 signal x, y, p , mod_exp : STD_LOGIC_VECTOR(c_num_bits-1 downto 0) := (others => '0'); 
    
 
@@ -35,7 +35,7 @@ begin
 uut : modexp2 GENERIC MAP (
       num_bits => c_num_bits) 
       PORT MAP(
-      mclk => mclk,
+      clk => clk,
       en => en,
       x => x,
       y => y,
@@ -45,9 +45,9 @@ uut : modexp2 GENERIC MAP (
       
 clk_proc : process
 BEGIN
-    mclk <= '0';
+    clk <= '0';
     wait for 5ns;
-    mclk <= '1';
+    clk <= '1';
     wait for 5ns;
 end process clk_proc;
 

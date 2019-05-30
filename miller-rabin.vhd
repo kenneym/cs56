@@ -128,6 +128,7 @@ begin
 	outer_loop_en <= '0';
 	inner_loop_en <= '0';
 	output_en <= '0';
+	not_prime_en <= '0';
 	
 	case (current_state) is
 

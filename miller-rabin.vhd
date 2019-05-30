@@ -20,7 +20,7 @@ use IEEE.NUMERIC_STD.ALL;
 -- OpenSSL: https://github.com/openssl/openssl
 -- DSS: https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.186-4.pdf
 
--- NOTE: Cannot check primacy of 1 or any even numbers.
+
 entity prime_test is
 	
 	GENERIC(data_size 	: integer := 8;
@@ -224,6 +224,8 @@ begin
 		-- defaults:
 		modexp_en <= '0';
 		v_ready <= '0';
+		done <= '0';
+		
 		
 		-- allows for one clock cycle delay, for v to be updated
 		if modexp_done = '1' then

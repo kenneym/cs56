@@ -27,6 +27,7 @@ entity pqgen is
     Generic(num_bits    :   integer := 8);
     Port ( clk          : in STD_LOGIC;
            en           : in STD_LOGIC;
+          -- seed_dad     : in STD_LOGIC_VECTOR(num_bits-1 downto 0);
            ---------------------------------------------------------
            p            : out STD_LOGIC_VECTOR (num_bits-1 downto 0);
            q            : out STD_LOGIC_VECTOR (num_bits-1 downto 0);
@@ -66,17 +67,27 @@ signal rand_num, rand_seed : STD_LOGIC_VECTOR(num_bits -1 downto 0) := (others =
 signal prime_en, prime_done, prime_outs :   STD_LOGIC := '0';
 signal prime_num_in, prime_seed        :   STD_LOGIC_VECTOR(num_bits-1 downto 0) := (others => '0');
 
-type state_type is (START, LS, LS_wait, waiter, LS_check, prime, prime_wait);
+type state_type is (START, LS, LS_wait, LS_check, prime, prime_wait);
 signal current_state, next_state : state_type := START;
 
 -- enable bits
-signal seed_en_en, seed_s_en, rand_en_en, r_l_en, num_in_en, pr_en, pout_en, qout_en, count_en, donez, count_r, d : STD_LOGIC := '0';
+signal seed_en_en, seed_s_en, rand_en_en, r_l_en, num_in_en, pr_en, pout_en, qout_en, count_en, donez, count_r, d, seed_init : STD_LOGIC := '0';
 
 -- registers
 signal rand_reg, pout, qout : STD_LOGIC_VECTOR(num_bits-1 downto 0);
 
 --count
 signal count : integer := 0;
+
+-- seed intermediates
+signal rand_seed_temp, prime_seed_temp : STD_LOGIC_VECTOR(num_bits-1 downto 0);
+
+signal zero : STD_LOGIC_VECTOR(num_bits-1 downto 1) := (others => '0');
+signal one  : STD_LOGIC_VECTOR(num_bits-1 downto 0) := zero & '1';
+
+signal zero2 : STD_LOGIC_VECTOR(num_bits-1 downto 2) := (others => '0');
+signal three  : STD_LOGIC_VECTOR(num_bits-1 downto 0) := zero2 & "11";
+
 begin
 
 random_generator: LFSR port map(
@@ -108,32 +119,36 @@ begin
     qout_en <= '0';
     count_en <= '0';
     count_r <= '0';
+    seed_init <= '0';
     
     case (current_state) is
         when START =>
         if en = '1' then
             next_state <= LS;
+            seed_init <= '1';
         end if;
         
         when LS =>
-         -- if rand_done = '1' then
-            seed_en_en <= '1';
-   
-           -- seed_s_en <= '1';
-            
-          
+            if rand_done = '1' then
+                seed_en_en <= '1';
+                seed_s_en <= '1';
+            end if;
             rand_en_en <= '1';
-            r_l_en <= '1';
-            next_state <= waiter;
+            next_state <= LS_wait;
        
         when LS_wait =>
-            next_state <= waiter;
-            r_l_en <= '1';
-        when waiter =>
             next_state <= LS_check;
+            r_l_en <= '1';
+            
         when LS_check =>
-            if (rand_reg(0) = '1') then
-                next_state <= prime;
+            if (rand_reg = "0001") then
+                next_state <= LS;
+            elsif (rand_reg(0) = '1') then
+                if(rand_reg(rand_reg'left) = '1') then
+                    next_state <= prime;
+                else
+                    next_state <= LS;
+                end if;
             else
                 next_state <= LS;
             end if;
@@ -178,15 +193,28 @@ begin
         rand_seed_en <= '0';
         prime_en <= '0';
         d <= '0';
-        prime_seed <=  ("00000000000000000000000111110001");
-        rand_seed <= ("00000101001000000000000111110001");
+        
+        
+        
+        if seed_init = '1' then
+            --prime_seed <=  STD_LOGIC_VECTOR(UNSIGNED(seed_dad) + UNSIGNED(three));
+             --rand_seed <= seed_dad;
+            --prime_seed_temp <= STD_LOGIC_VECTOR(UNSIGNED(seed_dad) + UNSIGNED(three));
+            --rand_seed_temp <= seed_dad;
+            prime_seed <= "1100";
+            rand_seed <= "0101";
+            prime_seed_temp <= "1100";
+            rand_seed_temp <= "0101";
+            rand_seed_en <= '1';
+            rand_en <= '1';
+        end if;
         
         if seed_en_en = '1' then
             rand_seed_en <= '1';
         end if;
         
         if seed_s_en = '1' then
-            rand_seed <= rand_reg; 
+            rand_seed <= STD_LOGIC_VECTOR(UNSIGNED(rand_seed_temp) + UNSIGNED(rand_reg)); 
         end if;
         
         if rand_en_en = '1' then
@@ -195,6 +223,7 @@ begin
         
         if r_l_en = '1' then
             rand_reg <= rand_num;
+           
         end if;
         
         if pr_en = '1' then

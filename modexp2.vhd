@@ -56,22 +56,25 @@ signal a_mod_temp          : UNSIGNED(2*num_bits-1 downto 0);
 
 -- Computes a / b = q remainder r.
 component modulus
-	GENERIC(data_size  : integer := 2*num_bits); -- set for test key
+	GENERIC(data_size  : integer := 2 * num_bits); -- set for test key
     PORT (clk 		: 	in STD_LOGIC;
-          a_in 		: 	in STD_LOGIC_VECTOR(2*num_bits -1  downto 0); -- a should be >= b
-		  b_in  	: 	in STD_LOGIC_VECTOR(2*num_bits - 1 downto 0);
+          a_in 		: 	in STD_LOGIC_VECTOR(data_size -1  downto 0); -- a should be >= b
+		  b_in  	: 	in STD_LOGIC_VECTOR(data_size - 1 downto 0);
 		  new_data	: 	in STD_LOGIC;
 		  ---------------------------------------------------------
 		  done 		: 	out STD_LOGIC;
-		  q_out 	: 	out STD_LOGIC_VECTOR(2*num_bits - 1 downto 0);
-		  r_out 	: 	out STD_LOGIC_VECTOR(2*num_bits - 1 downto 0));
+		  q_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0);
+		  r_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0));
 end component;
 
 signal l_en, modx_en, resx_en, modrex_en, output_en, y_shift_en, x_multi_en, modxx_en, modx_load_en, modres_load_en, modxx_load_en, x_load, res_load : STD_LOGIC := '0';
 
 begin
 
-mod_component: modulus port map(
+mod_component: modulus
+generic map(
+    data_size => 2 * num_bits)
+port map(
 	clk => clk,
 	a_in => a_mod,
 	b_in => b_mod,

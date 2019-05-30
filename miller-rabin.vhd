@@ -96,7 +96,10 @@ end component;
 
 begin
 
-modexp_component: modexp2 port map(
+modexp_component: modexp2 
+generic map(
+    num_bits => data_size)
+port map(
 	clk => clk,
 	en => modexp_en,
 	x => x_vec,
@@ -106,7 +109,10 @@ modexp_component: modexp2 port map(
 	done => modexp_done);
 
 
-random_generator: LFSR port map(
+random_generator: LFSR
+generic map(
+    num_bits => data_size)
+port map(
 	clk => clk,
 	enable => rand_en,
 	seed => seed,

@@ -52,8 +52,8 @@ component LFSR
             num_tries   : integer := 7);
     PORT(clk            : in STD_LOGIC;
          en             : in STD_LOGIC;
-         num_in         : in STD_LOGIC_VECTOR(num_bits-1 downto 0);
-         seed           : in STD_LOGIC_VECTOR(num_bits-1 downto 0);
+         num_in         : in STD_LOGIC_VECTOR(data_size-1 downto 0);
+         seed           : in STD_LOGIC_VECTOR(data_size-1 downto 0);
          -----------------------------------------------------------
          prime_out      : out   STD_LOGIC;
          done           : out   STD_LOGIC);
@@ -74,7 +74,7 @@ signal current_state, next_state : state_type := START;
 signal seed_en_en, seed_s_en, rand_en_en, r_l_en, num_in_en, pr_en, pout_en, qout_en, count_en, donez, count_r, d, seed_init : STD_LOGIC := '0';
 
 -- registers
-signal rand_reg, pout, qout : STD_LOGIC_VECTOR(num_bits-1 downto 0);
+signal rand_reg, pout, qout : STD_LOGIC_VECTOR(num_bits-1 downto 0) := (others => '0');
 
 --count
 signal count : integer := 0;
@@ -83,14 +83,15 @@ signal count : integer := 0;
 signal rand_seed_temp, prime_seed_temp : STD_LOGIC_VECTOR(num_bits-1 downto 0);
 
 signal zero : STD_LOGIC_VECTOR(num_bits-1 downto 1) := (others => '0');
-signal one  : STD_LOGIC_VECTOR(num_bits-1 downto 0) := zero & '1';
-
-signal zero2 : STD_LOGIC_VECTOR(num_bits-1 downto 2) := (others => '0');
-signal three  : STD_LOGIC_VECTOR(num_bits-1 downto 0) := zero2 & "11";
+signal one : STD_LOGIC_VECTOR(num_bits -1 downto 0) :=  (0 => '1', others => '0') ; 		-- represent the number 1
+signal three : UNSIGNED(num_bits -1 downto 0) :=  (0 => '1', 1 => '1', others => '0') ; 		-- represent the number 1
 
 begin
 
-random_generator: LFSR port map(
+random_generator: LFSR
+generic map(
+    num_bits => num_bits)
+port map(
 	clk => clk,
 	enable => rand_en,
 	seed => rand_seed,
@@ -98,7 +99,10 @@ random_generator: LFSR port map(
 	data => rand_num,
 	data_done => rand_done);
 
-prime_tester : prime_test port map(
+prime_tester : prime_test
+generic map(
+    data_size => num_bits)
+port map(
     clk => clk,
     en => prime_en,
     num_in => prime_num_in,

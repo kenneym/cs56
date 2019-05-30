@@ -53,7 +53,7 @@ end process clk_proc;
 stim_proc : process
 BEGIN
     wait for c_period;
-    seed_dad <= "00001001";
+    seed_dad <= "01001001";
     en <= '1';
     wait for c_period;
     

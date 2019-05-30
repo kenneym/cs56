@@ -40,7 +40,7 @@ end LFSR;
 architecture Behavioral of LFSR is
 
 signal r_LFSR : std_logic_vector(num_bits downto 1) := (others => '0');
-signal XNORS  : std_logic;
+signal XNORS, start  : std_logic;
 
 
 begin
@@ -53,8 +53,10 @@ begin
         if enable = '1' then
             if seed_en = '1' then
                 r_LFSR <= seed; 
+                start <= '1';
             else
                 r_LFSR <= r_LFSR(r_LFSR'left -1 downto 1) & XNORS;  -- left most value of r_LFSR, the upper bound conc. with XNORS
+                start <= '0';
             end if;
         end if;
      end if;
@@ -311,6 +313,6 @@ end generate poly_35;
   end generate poly_64;
 
 data <= r_LFSR(r_LFSR'left downto 1);
-data_done <= '1' when r_LFSR(r_LFSR'left downto 1) = seed else '0';
+data_done <= '1' when ((r_LFSR(r_LFSR'left downto 1) = seed) AND  NOT(start = '1')) else '0';
 
 end Behavioral;

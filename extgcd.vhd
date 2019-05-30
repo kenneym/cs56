@@ -169,6 +169,7 @@ begin
 			g <= b; -- a if finally divisiable by b, thus b is the gcd
 			done <= '1';
 			-- NOTE: (y mod phi of n gives secret key d)
+
 		end if;
 	end if;
 

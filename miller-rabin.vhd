@@ -20,7 +20,7 @@ use IEEE.NUMERIC_STD.ALL;
 -- OpenSSL: https://github.com/openssl/openssl
 -- DSS: https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.186-4.pdf
 
-
+-- NOTE: Cannot check primacy of 1 or any even numbers.
 entity prime_test is
 	
 	GENERIC(data_size 	: integer := 8;

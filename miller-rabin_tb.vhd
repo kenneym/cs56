@@ -94,13 +94,19 @@ begin
 --    wait for clk_period * 20;
 
 
-    num_in <= "10111011";       -- 187 (an 8 bit composite number)
+--    num_in <= "10111011";       -- 187 (an 8 bit composite number)
+--    seed <= "00101011";         -- set seed
+--    en <= '1';
+--    wait for clk_period;
+--    en <= '0';
+--    wait for clk_period * 20;
+    
+    num_in <= "00000011";       -- 1 (an 8 bit prime number)
     seed <= "00101011";         -- set seed
     en <= '1';
     wait for clk_period;
     en <= '0';
     wait for clk_period * 20;
-
 
 
     wait;

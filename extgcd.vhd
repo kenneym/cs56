@@ -38,7 +38,7 @@ signal a_mod, b_mod, q_out, r_out : STD_LOGIC_VECTOR(data_size -1 downto 0);
 
 -- Computes a / b = q remainder r.
 component modulus
-	GENERIC( data_size  : integer := 8); -- set for test key
+	GENERIC( data_size  : integer := data_size); -- set for test key
     PORT (clk 		: 	in STD_LOGIC;
           a_in 		: 	in STD_LOGIC_VECTOR(data_size - 1 downto 0); -- a should be >= b
 		  b_in  	: 	in STD_LOGIC_VECTOR(data_size - 1 downto 0);
@@ -50,7 +50,10 @@ end component;
 
 begin
 
-mod_component: modulus port map(
+mod_component: modulus
+generic map(
+    data_size => data_size)
+port map(
 	clk => clk,
 	a_in => a_mod,
 	b_in => b_mod,

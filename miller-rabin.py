@@ -18,19 +18,13 @@ def rabinMiller(num):
         s = s // 2
         t += 1
     
-    print(t);
     for trials in range(5): # try to falsify num's primality 5 times
         a = random.randrange(2, num - 1)
         v = pow(a, s, num)
-        print("v is" + str(v) + "\n")
 
-        print("outer_loop \n");
         if v != 1: # this test does not apply if v is 1.
             i = 0
             while v != (num - 1):
-                print("inner loop \n")
-                print("i = " + str(i))
-                print("t = " + str(t))
                 if i == t - 1:
                     return False
                 else:
@@ -74,17 +68,17 @@ def generateLargePrime(keysize=1024):
 
 # print("Should print True: " + str(rabinMiller(7)))
 # print()
-print("Should print True: " + str(rabinMiller(163)))
-print()
-print("Should print True: " + str(rabinMiller(1151)))
-print()
-print("Should print False: " + str(rabinMiller(1157)))
-print()
-print("Should print False: " + str(rabinMiller(1158)))
-print()
-print("Should print False: " + str(rabinMiller(1219)))
-print()
-print(generateLargePrime())
-print((11**81) % 163)
-
+#print("Should print True: " + str(rabinMiller(163)))
+#print()
+#print("Should print True: " + str(rabinMiller(1151)))
+#print()
+#print("Should print False: " + str(rabinMiller(1157)))
+#print()
+#print("Should print False: " + str(rabinMiller(1158)))
+#print()
+#print("Should print False: " + str(rabinMiller(1219)))
+#print()
+#print(generateLargePrime())
 # print(22**81 % 163)
+
+print(gcd(28861,35520))

@@ -40,7 +40,8 @@ component keygen is
 
 	PORT (  clk			:	in STD_LOGIC;
 			en			:	in STD_LOGIC;
-			seed_in		: 	in STD_LOGIC_VECTOR(key_size -1 downto 0);
+			seed_1		: 	in STD_LOGIC_VECTOR(key_size -1 downto 0);
+			seed_2		: 	in STD_LOGIC_VECTOR(key_size/2 -1 downto 0);
 			----------------------------------------------------------
 			done 		: 	out STD_LOGIC;
 			n_out 		: 	out STD_LOGIC_VECTOR(key_size -1 downto 0);
@@ -49,7 +50,8 @@ component keygen is
 end component;
 
 signal clk, en, done: STD_LOGIC := '0';
-signal seed_in, n_out, e_out, d_out: STD_LOGIC_VECTOR(key_size - 1 downto 0) := (others => '0');
+signal seed_1, n_out, e_out, d_out: STD_LOGIC_VECTOR(key_size - 1 downto 0) := (others => '0');
+signal seed_2 : STD_LOGIC_VECTOR(key_size/2 -1 downto 0) := (others => '0');
 signal clk_period : time := 10 ns;
 
 
@@ -58,7 +60,8 @@ begin
 uut: keygen PORT MAP(
      clk => clk,
      en => en,
-     seed_in => seed_in,
+     seed_1 => seed_1,
+     seed_2 => seed_2,
      done => done,
 	 n_out => n_out,
 	 e_out => e_out,
@@ -78,7 +81,8 @@ begin
 
 
     
-    seed_in <= "1001101100101011";       
+    seed_1 <= "1001101100101011";
+    seed_2 <= "10011001";       
     en <= '1';
     wait for clk_period;
     en <= '0';

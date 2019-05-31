@@ -65,7 +65,7 @@ signal modexp_en, modexp_done: STD_LOGIC := '0';
 
 
 -- Interface with LSFR component
-signal rand_en, seed_en : STD_LOGIC := '0';
+signal rand_en, rand_en_en, seed_en : STD_LOGIC := '0';
 signal rand_num : STD_LOGIC_VECTOR(data_size -1 downto 0) := (others => '0');
 
 
@@ -123,7 +123,7 @@ port map(
 
 
 
-nextStateLogic: process(current_state, en, try_num, s_odd, v_ready, v)
+nextStateLogic: process(current_state, en, try_num, s_odd, v_ready, v, one, num, i, t)
 begin
     
     next_state <= current_state;
@@ -142,7 +142,7 @@ begin
 
 			if en = '1' then
 				load_en <= '1';
-				rand_en <= '1'; -- set up random number generator
+				rand_en_en <= '1'; -- set up random number generator
 				seed_en <= '1';
 				next_state <= hold_rand;
 			end if;
@@ -152,7 +152,7 @@ begin
 			if  try_num < num_tries then
 				fetch_rands <= '1';
 			else
-			    rand_en <= '0';
+			    rand_en_en <= '0';
 				next_state <= half; 	-- NOTE this is not the correct next state. used for testing only
 			end if;
 
@@ -232,7 +232,11 @@ begin
 		modexp_en <= '0';
 		v_ready <= '0';
 		done <= '0';
+		rand_en <= '0';
 		
+		if rand_en_en = '1' then
+		   rand_en <= '1';
+		end if;
 		
 		-- allows for one clock cycle delay, for v to be updated
 		if modexp_done = '1' then

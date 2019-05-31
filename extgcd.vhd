@@ -22,10 +22,17 @@ architecture Behavioral of extgcd is
 type state_type is (nop, divide, hold, check);
 signal current_state, next_state : state_type := nop;
 
-signal a, b, g, r, q: UNSIGNED(data_size -1 downto 0) :=  (others => '0');  		-- To compute gcd
-signal y : SIGNED(data_size -1 downto 0) :=  (others => '0');               		-- Extended portion
-signal x : SIGNED(data_size -1 downto 0) :=  (0 => '1', others => '0');    			-- Extended portion
-signal mult_y : SIGNED((data_size * 2) -1 downto 0) := (others => '0'); 	-- large bit signal
+signal a, b, g, r, pad : UNSIGNED(data_size -1 downto 0) :=  (others => '0');  		-- To compute gcd
+signal x : SIGNED(data_size * 2 -1 downto 0) :=  (others => '0');               	-- Extended portion
+signal y : SIGNED(data_size * 2 -1 downto 0) :=  (0 => '1', others => '0');    		-- Extended portion
+signal prev_x : SIGNED(data_size * 2 -1 downto 0) :=  (0 => '1', others => '0');    		-- Extended portion
+signal prev_y : SIGNED(data_size * 2 -1 downto 0) :=  (others => '0');               	-- Extended portion
+
+signal mult_x : SIGNED((data_size * 4) -1 downto 0) := (others => '0');     -- large bit signals
+signal mult_y : SIGNED((data_size * 4) -1 downto 0) := (0 => '1', others => '0');     -- large bit signals
+
+signal q : UNSIGNED(data_size * 2 -1 downto 0) :=  (others => '0');
+
                                                                             		-- used for multiplication
 
 signal mod_en, load_en, output_en, iterate_en, fetch_en : STD_LOGIC := '0';			-- Enable signals
@@ -124,14 +131,26 @@ begin
 		
 		-- Reset monopulse mod operations:
 		mod_data <= '0';
-		y <= mult_y(y'left downto 0);
+		done <= '0';
+--		y <= mult_y(mult_y'left) & mult_y(y'left - 1 downto 0);
+
+		x <= resize(mult_x, data_size * 2);
+		y <= resize(mult_y, data_size * 2);
 		
 		if load_en = '1' then
 			done <= '0';
 			a <= UNSIGNED(a_in);
 			b <= UNSIGNED(b_in);
-			y <= (others => '0');  		  -- reset x & y values
-			x <= (0 => '1', others => '0');
+
+			x <= (others => '0');  		  -- reset x & y values
+			prev_x <= (0 => '1', others => '0');
+			mult_x <= (others => '0');
+
+			y <= (0 => '1', others => '0');
+			prev_y <= (others => '0');
+			mult_y <= (0 => '1', others => '0');
+
+			g <= (others => '0');
 
         end if;
 
@@ -146,7 +165,7 @@ begin
 
 		if fetch_en = '1' then
 
-			q <= UNSIGNED(q_out);
+			q <= pad & UNSIGNED(q_out);
 			r <= UNSIGNED(r_out);
 
 		end if;
@@ -158,18 +177,22 @@ begin
 			b <= r;
 
 			-- Continue euclid's extended algorithm to find x & y
-			x <= y;
-			mult_y <= x - (SIGNED(q) * y);
+			prev_x <= x;
+			prev_y <= y;
+			mult_x <= prev_x - (SIGNED(q) * x);
+			mult_y <= prev_y - (SIGNED(q) * y);
 
 		end if;
 			
 
 		if output_en = '1' then
 
-			-- compute x and y one more time:
-			x <= y;
-			mult_y <= x - (SIGNED(q) * y);
-			g <= b; -- a if finally divisiable by b, thus b is the gcd
+--			g <= b; 
+			g_out <= STD_LOGIC_VECTOR(b); -- a if finally divisiable by b, thus b is the gcd
+			x_out <= STD_LOGIC_VECTOR(RESIZE(x, data_size));
+			y_out <= STD_LOGIC_VECTOR(RESIZE(y, data_size));
+
+
 			done <= '1';
 			-- NOTE: (y mod phi of n gives secret key d)
 
@@ -178,8 +201,5 @@ begin
 
 end process gcd_datapath;
 
-g_out <= STD_LOGIC_VECTOR(g);
-x_out <= STD_LOGIC_VECTOR(x);
-y_out <= STD_LOGIC_VECTOR(y);
 
 end Behavioral;

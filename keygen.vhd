@@ -8,7 +8,8 @@ ENTITY keygen is
 
 	PORT (  clk			:	in STD_LOGIC;
 			en			:	in STD_LOGIC;
-			seed_in		: 	in STD_LOGIC_VECTOR(key_size -1 downto 0);
+			seed_1		: 	in STD_LOGIC_VECTOR(key_size -1 downto 0);
+			seed_2		: 	in STD_LOGIC_VECTOR(key_size/2 -1 downto 0);
 			----------------------------------------------------------
 			done 		: 	out STD_LOGIC;
 			n_out 		: 	out STD_LOGIC_VECTOR(key_size -1 downto 0);
@@ -23,9 +24,10 @@ ARCHITECTURE Behavioral of keygen is
     	Generic(num_bits    :   integer := (key_size / 2));
     	Port ( clk          : in STD_LOGIC;
     	       en           : in STD_LOGIC;
+			   seed_dad 	: in STD_LOGIC_VECTOR(num_bits -1 downto 0);
     	       ---------------------------------------------------------
-    	       p            : out STD_LOGIC_VECTOR (num_bits-1 downto 0);
-    	       q            : out STD_LOGIC_VECTOR (num_bits-1 downto 0);
+    	       p            : out STD_LOGIC_VECTOR(num_bits-1 downto 0);
+    	       q            : out STD_LOGIC_VECTOR(num_bits-1 downto 0);
     	       done         : out STD_LOGIC);
 	end component;
 
@@ -71,7 +73,7 @@ ARCHITECTURE Behavioral of keygen is
 
 -- Interface with pqgen component
 signal pqgen_en, pqgen_done : STD_LOGIC := '0';
-signal p, q : STD_LOGIC_VECTOR((key_size / 2) -1 downto 0);
+signal p, q, pq_seed : STD_LOGIC_VECTOR((key_size / 2) -1 downto 0);
 --signal test_p : STD_LOGIC_VECTOR((key_size / 2) -1 downto 0) := "10001001"; -- 137
 --signal test_q : STD_LOGIC_VECTOR((key_size / 2) -1 downto 0) := "10111111"; -- 191
 
@@ -79,24 +81,38 @@ signal p, q : STD_LOGIC_VECTOR((key_size / 2) -1 downto 0);
 -- Interface with extgcd components
 signal extgcd_en, extgcd_done : STD_LOGIC := '0';
 signal phi_n, e, gcd, y : STD_LOGIC_VECTOR(key_size - 1 downto 0);
+signal signed_y : SIGNED(key_size - 1 downto 0);
+signal adjusted_y : STD_LOGIC_VECTOR(key_size -1 downto 0);
 
 
 -- Interface with mod
 signal mod_en, mod_done : STD_LOGIC := '0';
 signal d : STD_LOGIC_VECTOR(key_size -1 downto 0);
+signal d_final : STD_LOGIC_VECTOR(key_size -1 downto 0); -- in case of negative y values (-num mod phi_n)
+
 
 
 -- Interface with LSFR Random number generator
 signal rand_en, seed_en, rand_done: STD_LOGIC := '0';
-signal seed : STD_LOGIC_VECTOR(key_size - 1 downto 0);
+signal rand_seed : STD_LOGIC_VECTOR(key_size - 1 downto 0);
+signal rand_seed_u : UNSIGNED(key_size - 1 downto 0);
+
+
+-- Additional signals
+signal n : STD_LOGIC_VECTOR(key_size - 1 downto 0);
+signal p_unsigned, q_unsigned : UNSIGNED((key_size / 2) -1 downto 0);
+signal one : UNSIGNED((key_size / 2) -1 downto 0) :=  (0 => '1', others => '0'); 		-- represent the number 1
+signal big_one : STD_LOGIC_VECTOR(key_size -1 downto 0) :=  (0 => '1', others => '0'); 		-- represent the number 1
+signal signed_zero: SIGNED(key_size -1 downto 0) := (others => '0');
 
 
 -- FSM:
 -- hold is a generic state to wait for modules to complete
-type state_type is (nop, gen_pq, hold, compute_n, try_e, test_e);
+type state_type is (nop, gen_pq, hold, compute_n, try_e, test_e, check_y_sign, mod_n, compute_d, output);
 signal current_state, next_state : state_type := nop;
-signal load_en, compute_n_en: STD_LOGIC := '0'; -- enable signals 
+signal load_en, compute_n_en, new_e_en, output_en, check_y_sign_en, compute_d_en: STD_LOGIC := '0'; -- enable signals 
 signal reset_seed : STD_LOGIC := '1'; 			-- misc. internal control signals
+signal new_e : STD_LOGIC := '0';
 
 
 
@@ -108,6 +124,7 @@ begin
 	port map(
 		clk => clk,
 		en => pqgen_en,
+		seed_dad => pq_seed,
 		p => p,
 		q => q,
 		done => pqgen_done);
@@ -119,7 +136,7 @@ begin
 	port map(
 		clk => clk,
 		enable => rand_en,
-		seed => seed,
+		seed => rand_seed,
 		seed_en => seed_en,
 		data => e,					-- random generated number becomes e if verified coprime with phi_n 
 		data_done => rand_done);
@@ -146,7 +163,7 @@ begin
 	    data_size => key_size)	
 	port map(
 		clk => clk,
-		a_in => y,
+		a_in => adjusted_y,
 		b_in => phi_n,
 		new_data => mod_en,
 		done => mod_done,
@@ -154,15 +171,26 @@ begin
 		r_out => d); 				-- y produced from extgcd algorithm produces secret key when moded by phi_n
 
 
-	next_state_logic: process(current_state, load_en, pqgen_done)
+	next_state_logic: process(current_state, load_en, pqgen_done, e, new_e, extgcd_done, mod_done)
 	begin
 
 		next_state <= current_state;
 
+		load_en <= '0';
+		compute_n_en <= '0';
+		new_e_en <= '0';
+		output_en <= '0';
+		compute_d_en <= '0';
+
+		-- to components
 		pqgen_en <= '0';
+		mod_en <= '0';
 		rand_en <= '0';
 		seed_en <= '0';
-		compute_n_en <= '0';
+		extgcd_en <= '0';
+		check_y_sign_en <= '0';
+		compute_d_en <= '0';
+
 
 		case(current_state) is
 
@@ -175,11 +203,21 @@ begin
 			when gen_pq => 
 				pqgen_en <= '1';
 				next_state <= hold;
-
+			
+			-- generic hold state
 			when hold =>
+
 				if pqgen_done = '1' then
 					next_state <= compute_n;
+
+				elsif extgcd_done = '1' then
+					next_state <= test_e;
+
+				elsif mod_done = '1' then
+					next_state <= compute_d;
+
 				end if;
+				
 
 			when compute_n => 
 				compute_n_en <= '1';
@@ -187,6 +225,7 @@ begin
 
 			when try_e =>
 				rand_en <= '1';
+				new_e_en <= '1';
 				if reset_seed = '1' then
 					seed_en <= '1';
 				end if;
@@ -195,6 +234,42 @@ begin
 
 			when test_e =>
 
+				-- if e has yet to be tested
+				if new_e = '1' then
+
+					-- enforce range
+					if (e < phi_n) and (e > big_one) then
+						extgcd_en <= '1';
+						next_state <= hold;
+					else
+						next_state <= try_e;
+					end if;
+
+				-- if we've already found gcd(e, phi_n), test it
+				else 
+					if gcd = big_one then
+						next_state <= check_y_sign;
+					else
+						next_state <= try_e;
+					end if;
+				end if;
+
+			when check_y_sign =>
+				check_y_sign_en <= '1';
+				next_state <= mod_n;
+
+			when mod_n => 
+				mod_en <= '1';
+				next_state <= hold;
+
+			when compute_d =>
+				compute_d_en <= '1';
+				next_state <= output;
+			
+			when output =>
+				output_en <= '1';
+				next_state <= nop;
+							
 
 		end case;
 
@@ -213,10 +288,19 @@ begin
 	begin
 		if rising_edge(clk) then
 
-			-- capture monopulse done signal for later (more convenient for this code)
+			p_unsigned <= UNSIGNED(p);
+			q_unsigned <= UNSIGNED(q);
+			signed_y <= SIGNED(y);
+
+			new_e <= '0';
+
+			-- monopulse done signal
+			done <= '0';
+
+			-- capture monopulse done signals for later (more convenient for this code)
 			if rand_done = '1' then
 				reset_seed <= '1';
-				seed <= STD_LOGIC_VECTOR(UNSIGNED(seed) + UNSIGNED(e)); -- add current random number to past seed to get a new seed
+				rand_seed <= STD_LOGIC_VECTOR(UNSIGNED(rand_seed) + UNSIGNED(e)); -- add current random number to past seed to get a new seed
 			end if;
 			
 			if seed_en = '1' then
@@ -224,28 +308,57 @@ begin
 			end if;
 
 			if load_en = '1' then
-				seed <= seed_in;
-				reset_seed <= '1'; -- reset the seed each time the keygen module is used
+				n_out <= (others => '0');
+				e_out <= (others => '0');
+				d_out <= (others => '0');
+				rand_seed <= seed_1;
+				pq_seed <= seed_2;
+				reset_seed <= '1';  -- reset the seed each time the keygen module is used
 			end if;
+
+			if compute_n_en = '1' then
+				n <= STD_LOGIC_VECTOR(p_unsigned * q_unsigned);
+				phi_n <= STD_LOGIC_VECTOR((p_unsigned - one) * (q_unsigned - one));
+			end if;
+
+			if new_e_en = '1' then
+				new_e <= '1';
+			end if;
+
+			if check_y_sign_en = '1' then
+
+				if signed_y < signed_zero then
+					adjusted_y <= STD_LOGIC_VECTOR(-signed(y));
+				else
+					adjusted_y <= y;
+				end if;
+			end if;
+
+
+			if compute_d_en = '1' then
+
+				d_final <= d;
+
+				-- If y was negative, corect the value of d to account for negative mod operation
+				if signed_y < signed_zero then
+					d_final <= STD_LOGIC_VECTOR(UNSIGNED(phi_n) - UNSIGNED(d));
+				end if;
+
+			end if;
+
+			if output_en = '1' then
+				n_out <= n;
+				e_out <= e;
+				d_out <= d_final;
+				done <= '1';
+			end if;
+
 
 		end if;
 	end process datapath;
 
 
 end Behavioral;
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

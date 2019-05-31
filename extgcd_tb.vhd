@@ -44,12 +44,14 @@ component extgcd is
 		  -----------------------------------------------------------
 		  done 		: 	out STD_LOGIC;
           g_out	  	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0);
-		  x_out	  	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0);
-	  	  y_out		: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0));
+		  x_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0);
+		  y_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0));
 end component;
 
 signal clk, new_data, done : STD_LOGIC := '0';
-signal a_in, b_in, g_out, x_out, y_out : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
+signal a_in, b_in, g_out : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
+signal x_out, y_out : STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
+
 signal clk_period : time := 10 ns;
 
 
@@ -84,18 +86,17 @@ begin
     new_data <= '1';
     wait for clk_period;
     new_data <= '0';
-    wait for clk_period * 20;
+    wait for clk_period * 40;
 
---	  -- 18 remainder 2
---	  a_in <= "10000000"; -- 128
---    b_in <= "00000111"; -- 7
---    new_data <= '1';
---    wait for clk_period;
---    new_data <= '0';
+	  -- 18 remainder 2
+    a_in <= "10000000"; -- 128
+    b_in <= "00000111"; -- 7
+    new_data <= '1';
+    wait for clk_period;
+    new_data <= '0';
 
 
     wait;
-
 
 end process stim_proc;
 

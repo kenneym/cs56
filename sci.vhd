@@ -28,14 +28,14 @@ use IEEE.NUMERIC_STD.ALL;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity sci is
-    Port (  mclk    :       in STD_LOGIC;                       --the master clock
+entity SerialRx is
+    Port (  clk    :       in STD_LOGIC;                       --the master clock
             RsRx     :      in STD_LOGIC;                       --serial data in
             rx_data  :      out STD_LOGIC_VECTOR(7 downto 0);   --parallel data out
             rx_done_tick :  out STD_LOGIC);                     --data ready (done tick)
-end sci;
+end SerialRx;
 
-architecture Behavioral of sci is
+architecture Behavioral of SerialRx is
 
 type state_type is (waits, shifts, writes);
 signal current_state, next_state : state_type := waits;
@@ -63,7 +63,6 @@ begin
         case (current_state) is
             when waits =>
                 c_count_r <= '1';
-                s_count_r <= '1';
                 first <= '0';
                 if RsRx_S = '0' then
                     next_state <= shifts;
@@ -90,24 +89,27 @@ begin
     end process nextStateLogic;
     
     
-    synchronize:process(mclk, RsRx_FF, RsRx_S)
+    synchronize:process(clk, RsRx_FF, RsRx_S)
     begin
-        if rising_edge(mclk) then
+        if rising_edge(clk) then
             RsRx_FF <= RsRx;
             RsRx_S <= RsRx_FF;
         end if;
     end process synchronize;
     
-    stateUpdate: process(mclk)
+    stateUpdate: process(clk)
     begin
-        if rising_edge(mclk) then
+        if rising_edge(clk) then
             current_state <= next_state;
+
+			rx_done_tick <= '0';
+
             if c_count_en = '1' then
                 c_count <= c_count + 1;
             end if;
             if s_count_en = '1' then
                 s_count <= s_count + 1;
-                shift_reg <= rsrx_s & shift_reg(9 downto 1);
+                shift_reg <= RsRx_s & shift_reg(9 downto 1);
             end if;
             if out_en = '1' then
                 out_reg <= shift_reg(7 downto 0);
@@ -118,8 +120,6 @@ begin
             end if;
             if c_count_r = '1' then
                 c_count <= 0;
-            end if;
-            if s_count_r = '1' then
                 s_count <= "0000";
             end if;
         end if;

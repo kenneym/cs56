@@ -8,7 +8,7 @@ end LSFR_tb;
 architecture testbench of LSFR_tb is
 
 component LFSR is
- generic (num_bits : integer := 32);
+ generic (num_bits : integer := 8);
  port ( clk : in STD_LOGIC;
         enable : in STD_LOGIC;
         seed : in STD_LOGIC_VECTOR(num_bits - 1 downto 0);
@@ -18,7 +18,7 @@ component LFSR is
         );
 end component;
 
-constant c_num_bits :       integer := 5;
+constant c_num_bits :       integer := 4;
 constant c_period   :       time    := 40ns;
 
 signal clk          :       STD_LOGIC := '0';
@@ -52,17 +52,13 @@ end process clk_proc;
 
 stim_proc : process
 begin
-
-    wait for 20ns;
-    
+    wait for 10ns;
     enable <= '1';
-    
-    wait for 20ns;
     seed_en <= '1';
-    wait for 5ns;
-    seed <= "01011";
-    wait for 5ns;
-    seed_en <= '0'; 
+    seed <= "10011011";
+    wait for c_period;
+     seed_en <= '0';
+    
     wait for 20ns;
     wait;
 end process stim_proc;

@@ -28,7 +28,7 @@ entity modexp2 is
     generic (
     num_bits    :   integer := 8);
     
-    Port (mclk      :     in  STD_LOGIC;
+    Port (clk      :     in  STD_LOGIC;
           en        :     in  STD_LOGIC;
           x         :     in  STD_LOGIC_VECTOR(num_bits-1 downto 0);
           y         :     in  STD_LOGIC_VECTOR(num_bits-1 downto 0);
@@ -44,40 +44,44 @@ type state_type is (load, modx_load, modx_go, modx, whiles, resx, modres_load, m
 signal current_state, next_state : state_type := load;
 
 signal x_c, y_c, p_c, y_c_zero,res, res_out      :       UNSIGNED(num_bits-1 downto 0) := (others => '0');
-signal res_temp, x_temp                               :       UNSIGNED(2*num_bits-1 downto 0) := (others => '0');
+signal res_temp, x_temp                          :       UNSIGNED(2*num_bits-1 downto 0) := (others => '0');
     
 
 -- Interface with modulus component
 signal mod_data, mod_finished: STD_LOGIC;
-signal b_mod, q_out, r_out : STD_LOGIC_VECTOR(2*num_bits -1 downto 0);
+signal b_mod, r_out : STD_LOGIC_VECTOR(2*num_bits -1 downto 0);
 signal a_mod               : STD_LOGIC_VECTOR(2*num_bits-1 downto 0);
 signal a_mod_temp          : UNSIGNED(2*num_bits-1 downto 0);
+signal r_intermed          : STD_LOGIC_VECTOR(2*num_bits -1 downto 0);
 
 
 -- Computes a / b = q remainder r.
 component modulus
-	GENERIC(data_size  : integer := 2*num_bits); -- set for test key
+	GENERIC(data_size  : integer := 2 * num_bits); -- set for test key
     PORT (clk 		: 	in STD_LOGIC;
-          a_in 		: 	in STD_LOGIC_VECTOR(2*num_bits -1  downto 0); -- a should be >= b
-		  b_in  	: 	in STD_LOGIC_VECTOR(2*num_bits - 1 downto 0);
+          a_in 		: 	in STD_LOGIC_VECTOR(data_size -1  downto 0); -- a should be >= b
+		  b_in  	: 	in STD_LOGIC_VECTOR(data_size - 1 downto 0);
 		  new_data	: 	in STD_LOGIC;
 		  ---------------------------------------------------------
 		  done 		: 	out STD_LOGIC;
-		  q_out 	: 	out STD_LOGIC_VECTOR(2*num_bits - 1 downto 0);
-		  r_out 	: 	out STD_LOGIC_VECTOR(2*num_bits - 1 downto 0));
+		  q_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0);
+		  r_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0));
 end component;
 
 signal l_en, modx_en, resx_en, modrex_en, output_en, y_shift_en, x_multi_en, modxx_en, modx_load_en, modres_load_en, modxx_load_en, x_load, res_load : STD_LOGIC := '0';
 
 begin
 
-mod_component: modulus port map(
-	clk => mclk,
+mod_component: modulus
+generic map(
+    data_size => 2 * num_bits)
+port map(
+	clk => clk,
 	a_in => a_mod,
 	b_in => b_mod,
 	new_data => mod_data,
 	done => mod_finished,
-	q_out => q_out,
+	q_out => open,
 	r_out => r_out);
 	
 nextStateLogic: process(current_state, en, mod_finished, y_c(0), y_c_zero)
@@ -175,24 +179,24 @@ end case;
 
 end process nextStateLogic; 
 
-stateUpdate : process(mclk)
+stateUpdate : process(clk)
 begin
-    if rising_edge(mclk) then
+    if rising_edge(clk) then
         current_state <= next_state;
     end if;
 end process stateUpdate;
 
-modexpDataPath : process(mclk)
+modexpDataPath : process(clk)
 begin
-    if rising_edge(mclk) then
+    if rising_edge(clk) then
         mod_data <= '0';
         done <= '0';
-        
+                
         if (l_en = '1' ) then
             x_c <= UNSIGNED(x);
             y_c <= UNSIGNED(y);
             p_c <= UNSIGNED(p);
-            res <= res(num_bits-2 downto 0) & '1';
+            res <= (0 => '1', others => '0') ;
         end if;
         
         if modx_load_en = '1' then
@@ -205,7 +209,7 @@ begin
         end if;
         
         if x_load = '1' then
-            x_c <= UNSIGNED(r_out(num_bits-1 downto 0));
+            x_c <= UNSIGNED(r_intermed(num_bits-1 downto 0));
         end if;
         
         if resx_en = '1' then
@@ -222,7 +226,7 @@ begin
         end if;
         
         if res_load = '1' then
-            res <= UNSIGNED(r_out(num_bits-1 downto 0));
+            res <= UNSIGNED(r_intermed(num_bits-1 downto 0));
         end if;
         
         if output_en = '1' then
@@ -249,6 +253,8 @@ begin
         
     end if;
 end process modexpDataPath;
+
+r_intermed <= r_out;
 
 mod_exp <= STD_LOGIC_VECTOR(res_out);
 

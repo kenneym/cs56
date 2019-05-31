@@ -42,7 +42,7 @@ signal current_state, next_state : state_type := waits;
 signal c_count :integer := 0;
 signal s_count : unsigned(3 downto 0) := "0000";
 signal c_count_en, s_count_en, rx_done_en, out_en, first, c_count_r, s_count_r: STD_LOGIC := '0';
-signal rsrx_ff, rsrx_s : STD_LOGIC := '0';
+signal rsrx_ff, rsrx_s : STD_LOGIC;
 constant baud : integer := 115200;
 constant clk_freq : integer := 10000000;
 constant n : integer := clk_freq/baud;
@@ -51,7 +51,7 @@ signal shift_reg : STD_LOGIC_VECTOR(9 downto 0) := "0000000000";
 signal out_reg : STD_LOGIC_VECTOR(7 downto 0) := "00000000";
 
 begin
-    nextStateLogic: process(current_state, RsRx, RsRx_S, c_count, s_count)
+    nextStateLogic: process(current_state, RsRx, RsRx_S, c_count, s_count, first)
     begin
         next_state <= current_state;
         c_count_en <= '0';
@@ -63,6 +63,7 @@ begin
         case (current_state) is
             when waits =>
                 c_count_r <= '1';
+                s_count_r <= '1';
                 first <= '0';
                 if RsRx_S = '0' then
                     next_state <= shifts;
@@ -113,15 +114,17 @@ begin
             end if;
             if out_en = '1' then
                 out_reg <= shift_reg(7 downto 0);
-                rx_data <= out_reg;
             end if;
             if rx_done_en = '1' then
                 rx_done_tick <= '1';
             end if;
             if c_count_r = '1' then
                 c_count <= 0;
+            end if;
+            if s_count_r = '1' then
                 s_count <= "0000";
             end if;
         end if;
      end process stateUpdate;
+     rx_data <= out_reg;
 end Behavioral;

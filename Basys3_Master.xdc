@@ -4,9 +4,9 @@
 ## - rename the used ports (in each line, after get_ports) according to the top level signal names in the project
 
 ## Clock signal
-#set_property PACKAGE_PIN W5 [get_ports clk]							
-	#set_property IOSTANDARD LVCMOS33 [get_ports clk]
-	#create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports clk]
+set_property PACKAGE_PIN W5 [get_ports Clk]							
+	set_property IOSTANDARD LVCMOS33 [get_ports Clk]
+	create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports Clk]
  
 ## Switches
 #set_property PACKAGE_PIN V17 [get_ports {sw[0]}]					
@@ -125,11 +125,11 @@
 #set_property PACKAGE_PIN J1 [get_ports {JA[0]}]					
 	#set_property IOSTANDARD LVCMOS33 [get_ports {JA[0]}]
 ##Sch name = JA2
-#set_property PACKAGE_PIN L2 [get_ports {JA[1]}]					
-	#set_property IOSTANDARD LVCMOS33 [get_ports {JA[1]}]
+set_property PACKAGE_PIN L2 [get_ports {RsTx}]					
+	set_property IOSTANDARD LVCMOS33 [get_ports {RsTx}]
 ##Sch name = JA3
-#set_property PACKAGE_PIN J2 [get_ports {JA[2]}]					
-	#set_property IOSTANDARD LVCMOS33 [get_ports {JA[2]}]
+set_property PACKAGE_PIN J2 [get_ports {RsRx}]					
+	set_property IOSTANDARD LVCMOS33 [get_ports {RsRx}]
 ##Sch name = JA4
 #set_property PACKAGE_PIN G2 [get_ports {JA[3]}]					
 	#set_property IOSTANDARD LVCMOS33 [get_ports {JA[3]}]

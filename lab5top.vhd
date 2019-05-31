@@ -27,13 +27,14 @@ use UNISIM.Vcomponents.ALL;
 entity lab5top is
     Port ( Clk : in  STD_LOGIC;					-- 100 MHz board clock
            RsRx  : in  STD_LOGIC;				-- Rx input
-		   RsTx  : out  STD_LOGIC;				-- Tx output
+		   RsTx  : out  STD_LOGIC				-- Tx output
            --
            -- Testing ports
-           clk10_p : out std_logic;				-- 10 MHz clock
-           RsRx_p : out std_logic;				-- serial data stream
-		   rx_shift_p : out std_logic;			-- Rx register shift           
-		   rx_done_tick_p : OUT  std_logic );	-- data ready
+           --clk10_p : out std_logic;				-- 10 MHz clock
+          -- RsRx_p : out std_logic;				-- serial data stream
+		   --rx_shift_p : out std_logic;			-- Rx register shift           
+		   --rx_done_tick_p : OUT  std_logic 
+		   );	-- data ready
 end lab5top;
 
 -- This is the eventual version with transmitter included
@@ -100,9 +101,9 @@ end process Clock_divider;
 ------------------------------
 
 -- Map testing signals to toplevel ports
-clk10_p <= clk_en;
-RsRx_p <= RsRx;				
-rx_done_tick_p <= rx_done_tick;
+--clk10_p <= clk_en;
+--RsRx_p <= RsRx;				
+--rx_done_tick_p <= rx_done_tick;
 
 Receiver: SerialRx PORT MAP(
 		Clk => clk10,				-- receiver is clocked with 10 MHz clock

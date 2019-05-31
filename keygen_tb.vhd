@@ -30,7 +30,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity keygen_tb is
-	GENERIC(key_size	: integer := 16);
+	GENERIC(key_size	: integer := 32);
 end keygen_tb;
 
 architecture testbench of keygen_tb is
@@ -57,7 +57,9 @@ signal clk_period : time := 10 ns;
 
 begin
 
-uut: keygen PORT MAP(
+uut: keygen 
+GENERIC MAP ( key_size => key_size)
+PORT MAP(
      clk => clk,
      en => en,
      seed_1 => seed_1,
@@ -81,8 +83,8 @@ begin
 
 
     
-    seed_1 <= "1001101100101011";
-    seed_2 <= "10011001";       
+    seed_1 <= "10011011001010111001101100101011";
+    seed_2 <= "1001100110011001";       
     en <= '1';
     wait for clk_period;
     en <= '0';

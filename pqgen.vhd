@@ -110,7 +110,7 @@ port map(
     prime_out => prime_outs,
     done => prime_done);
 
-nextStateLogic: process(current_state, rand_done, en, rand_reg, prime_done, prime_outs, count)
+nextStateLogic: process(current_state, rand_done, en, rand_reg, prime_done, prime_outs, count, one)
 begin
     next_state <= current_state;
     seed_en_en <= '0';

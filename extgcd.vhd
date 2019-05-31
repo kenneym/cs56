@@ -22,7 +22,7 @@ architecture Behavioral of extgcd is
 type state_type is (nop, divide, hold, check);
 signal current_state, next_state : state_type := nop;
 
-signal a, b, g, r, pad : UNSIGNED(data_size -1 downto 0) :=  (others => '0');  		-- To compute gcd
+signal a, b, r, pad : UNSIGNED(data_size -1 downto 0) :=  (others => '0');  		-- To compute gcd
 signal x : SIGNED(data_size * 2 -1 downto 0) :=  (others => '0');               	-- Extended portion
 signal y : SIGNED(data_size * 2 -1 downto 0) :=  (0 => '1', others => '0');    		-- Extended portion
 signal prev_x : SIGNED(data_size * 2 -1 downto 0) :=  (0 => '1', others => '0');    		-- Extended portion
@@ -69,7 +69,7 @@ port map(
 	q_out => q_out,
 	r_out => r_out);
 
-nextStateLogic: process(current_state, new_data, mod_finished)
+nextStateLogic: process(current_state, new_data, mod_finished, r)
 begin
     
     next_state <= current_state;
@@ -150,8 +150,6 @@ begin
 			prev_y <= (others => '0');
 			mult_y <= (0 => '1', others => '0');
 
-			g <= (others => '0');
-
         end if;
 
 		if mod_en = '1' then
@@ -187,7 +185,6 @@ begin
 
 		if output_en = '1' then
 
---			g <= b; 
 			g_out <= STD_LOGIC_VECTOR(b); -- a if finally divisiable by b, thus b is the gcd
 			x_out <= STD_LOGIC_VECTOR(RESIZE(x, data_size));
 			y_out <= STD_LOGIC_VECTOR(RESIZE(y, data_size));

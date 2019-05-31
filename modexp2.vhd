@@ -49,9 +49,10 @@ signal res_temp, x_temp                          :       UNSIGNED(2*num_bits-1 d
 
 -- Interface with modulus component
 signal mod_data, mod_finished: STD_LOGIC;
-signal b_mod, q_out, r_out : STD_LOGIC_VECTOR(2*num_bits -1 downto 0);
+signal b_mod, r_out : STD_LOGIC_VECTOR(2*num_bits -1 downto 0);
 signal a_mod               : STD_LOGIC_VECTOR(2*num_bits-1 downto 0);
 signal a_mod_temp          : UNSIGNED(2*num_bits-1 downto 0);
+signal r_intermed          : STD_LOGIC_VECTOR(2*num_bits -1 downto 0);
 
 
 -- Computes a / b = q remainder r.
@@ -80,7 +81,7 @@ port map(
 	b_in => b_mod,
 	new_data => mod_data,
 	done => mod_finished,
-	q_out => q_out,
+	q_out => open,
 	r_out => r_out);
 	
 nextStateLogic: process(current_state, en, mod_finished, y_c(0), y_c_zero)
@@ -190,7 +191,7 @@ begin
     if rising_edge(clk) then
         mod_data <= '0';
         done <= '0';
-        
+                
         if (l_en = '1' ) then
             x_c <= UNSIGNED(x);
             y_c <= UNSIGNED(y);
@@ -208,7 +209,7 @@ begin
         end if;
         
         if x_load = '1' then
-            x_c <= UNSIGNED(r_out(num_bits-1 downto 0));
+            x_c <= UNSIGNED(r_intermed(num_bits-1 downto 0));
         end if;
         
         if resx_en = '1' then
@@ -225,7 +226,7 @@ begin
         end if;
         
         if res_load = '1' then
-            res <= UNSIGNED(r_out(num_bits-1 downto 0));
+            res <= UNSIGNED(r_intermed(num_bits-1 downto 0));
         end if;
         
         if output_en = '1' then
@@ -252,6 +253,8 @@ begin
         
     end if;
 end process modexpDataPath;
+
+r_intermed <= r_out;
 
 mod_exp <= STD_LOGIC_VECTOR(res_out);
 

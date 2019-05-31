@@ -110,7 +110,7 @@ signal signed_zero: SIGNED(key_size -1 downto 0) := (others => '0');
 -- hold is a generic state to wait for modules to complete
 type state_type is (nop, gen_pq, hold, compute_n, try_e, test_e, check_y_sign, mod_n, compute_d, output);
 signal current_state, next_state : state_type := nop;
-signal load_en, compute_n_en, new_e_en, output_en, check_y_sign_en, compute_d_en: STD_LOGIC := '0'; -- enable signals 
+signal load_en, compute_n_en, output_en, check_y_sign_en, compute_d_en, en_pqgen, en_rand, en_seed, en_extgcd, en_mod, new_e_disable: STD_LOGIC := '0'; -- enable signals 
 signal reset_seed : STD_LOGIC := '1'; 			-- misc. internal control signals
 signal new_e : STD_LOGIC := '0';
 
@@ -171,25 +171,25 @@ begin
 		r_out => d); 				-- y produced from extgcd algorithm produces secret key when moded by phi_n
 
 
-	next_state_logic: process(current_state, load_en, pqgen_done, e, new_e, extgcd_done, mod_done)
+	next_state_logic: process(current_state, load_en, pqgen_done, e, new_e, extgcd_done, mod_done, en, reset_seed, phi_n, big_one, gcd, extgcd_en, seed_en, rand_en, mod_en, pqgen_en)
 	begin
 
 		next_state <= current_state;
 
 		load_en <= '0';
 		compute_n_en <= '0';
-		new_e_en <= '0';
-		output_en <= '0';
-		compute_d_en <= '0';
-
-		-- to components
-		pqgen_en <= '0';
-		mod_en <= '0';
-		rand_en <= '0';
-		seed_en <= '0';
-		extgcd_en <= '0';
 		check_y_sign_en <= '0';
 		compute_d_en <= '0';
+		output_en <= '0';
+
+
+		-- to components
+		en_pqgen <= '0';
+		en_mod <= '0';
+		en_rand <= '0';
+		en_seed <= '0';
+		en_extgcd <= '0';
+		new_e_disable <= '0';
 
 
 		case(current_state) is
@@ -201,7 +201,7 @@ begin
 				end if;
 
 			when gen_pq => 
-				pqgen_en <= '1';
+				en_pqgen <= '1';            ---
 				next_state <= hold;
 			
 			-- generic hold state
@@ -224,34 +224,39 @@ begin
 				next_state <= try_e;
 
 			when try_e =>
-				rand_en <= '1';
-				new_e_en <= '1';
+				en_rand  <= '1';     --
 				if reset_seed = '1' then
-					seed_en <= '1';
+					en_seed <= '1'; --
 				end if;
 
 				next_state <= test_e;
 
 			when test_e =>
+			
+			    -- wait for one clock cycle to collect random number
+			    if rand_en = '0' then
 
-				-- if e has yet to be tested
-				if new_e = '1' then
+				    -- if e has yet to be tested
+				    if new_e = '1' then
+				        new_e_disable <= '1';
 
-					-- enforce range
-					if (e < phi_n) and (e > big_one) then
-						extgcd_en <= '1';
-						next_state <= hold;
-					else
-						next_state <= try_e;
-					end if;
+					   -- enforce range
+					   if (e < phi_n) and (e > big_one) then
+						  en_extgcd <= '1'; --
+						  next_state <= hold;
+					   else
+						  next_state <= try_e;
+					   end if;
 
-				-- if we've already found gcd(e, phi_n), test it
-				else 
-					if gcd = big_one then
-						next_state <= check_y_sign;
-					else
-						next_state <= try_e;
-					end if;
+				    -- if we've already found gcd(e, phi_n), test it
+				    else 
+					   if gcd = big_one then
+						  next_state <= check_y_sign;
+					   else
+						  next_state <= try_e;
+					   end if;
+				    end if;
+				
 				end if;
 
 			when check_y_sign =>
@@ -259,7 +264,7 @@ begin
 				next_state <= mod_n;
 
 			when mod_n => 
-				mod_en <= '1';
+				en_mod <= '1';
 				next_state <= hold;
 
 			when compute_d =>
@@ -291,8 +296,14 @@ begin
 			p_unsigned <= UNSIGNED(p);
 			q_unsigned <= UNSIGNED(q);
 			signed_y <= SIGNED(y);
-
-			new_e <= '0';
+			
+			
+			-- Enables to components:
+		    pqgen_en <= '0';
+		    mod_en <= '0';
+		    rand_en <= '0';
+		    seed_en <= '0';
+		    extgcd_en <= '0';
 
 			-- monopulse done signal
 			done <= '0';
@@ -306,7 +317,37 @@ begin
 			if seed_en = '1' then
 			    reset_seed <= '0';
 			end if;
+			
 
+		    -- enables interfacing with components
+		    if en_pqgen = '1' then
+		        pqgen_en <= '1';
+		    end if;
+		    
+		    if en_mod = '1' then
+		        mod_en <= '1';
+		    end if;
+		    
+		    if en_rand = '1' then
+		        new_e <= '1';
+		        rand_en <= '1';
+		    end if;
+		    
+		    if new_e_disable = '1' then
+		        new_e <= '0';
+		    end if;
+		    
+		    if en_seed = '1' then
+		        seed_en <= '1';
+		    end if;
+		    
+		    if en_extgcd = '1' then
+		        extgcd_en <= '1';
+		    end if;
+		
+		
+		
+		
 			if load_en = '1' then
 				n_out <= (others => '0');
 				e_out <= (others => '0');
@@ -320,10 +361,7 @@ begin
 				n <= STD_LOGIC_VECTOR(p_unsigned * q_unsigned);
 				phi_n <= STD_LOGIC_VECTOR((p_unsigned - one) * (q_unsigned - one));
 			end if;
-
-			if new_e_en = '1' then
-				new_e <= '1';
-			end if;
+			
 
 			if check_y_sign_en = '1' then
 

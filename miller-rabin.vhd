@@ -65,7 +65,7 @@ signal modexp_en, modexp_done: STD_LOGIC := '0';
 
 
 -- Interface with LSFR component
-signal rand_en, rand_en_en, seed_en : STD_LOGIC := '0';
+signal rand_en, rand_en_en, seed_en, seed_en_en : STD_LOGIC := '0';
 signal rand_num : STD_LOGIC_VECTOR(data_size -1 downto 0) := (others => '0');
 
 
@@ -129,12 +129,13 @@ begin
     next_state <= current_state;
 	load_en <= '0';
 	fetch_rands <= '0';
-	seed_en <= '0';
 	half_en <= '0';
 	outer_loop_en <= '0';
 	inner_loop_en <= '0';
 	output_en <= '0';
 	not_prime_en <= '0';
+	
+	seed_en_en <= '0';
 	
 	case (current_state) is
 
@@ -143,7 +144,7 @@ begin
 			if en = '1' then
 				load_en <= '1';
 				rand_en_en <= '1'; -- set up random number generator
-				seed_en <= '1';
+				seed_en_en <= '1';
 				next_state <= hold_rand;
 			end if;
 
@@ -232,10 +233,16 @@ begin
 		modexp_en <= '0';
 		v_ready <= '0';
 		done <= '0';
-		rand_en <= '0';
+		seed_en <= '0';
 		
 		if rand_en_en = '1' then
 		   rand_en <= '1';
+		else
+		   rand_en <= '0';
+		end if;
+		
+		if seed_en_en = '1' then
+		   seed_en <= '1';
 		end if;
 		
 		-- allows for one clock cycle delay, for v to be updated

@@ -79,7 +79,7 @@ stim_proc : process
 begin
 
 
---    num_in <= "10100011";       -- 163 (an 8 bit prime
+--  num_in <= "10100011";       -- 163 (an 8 bit prime
 --    seed <= "00101011";         -- set seed
 --    en <= '1';
 --    wait for clk_period;
@@ -94,19 +94,19 @@ begin
 --    wait for clk_period * 20;
 
 
---    num_in <= "10111011";       -- 187 (an 8 bit composite number)
---    seed <= "00101011";         -- set seed
---    en <= '1';
---    wait for clk_period;
---    en <= '0';
---    wait for clk_period * 20;
-    
-    num_in <= "00000011";       -- 1 (an 8 bit prime number)
+    num_in <= "10111011";       -- 187 (an 8 bit composite number)
     seed <= "00101011";         -- set seed
     en <= '1';
     wait for clk_period;
     en <= '0';
     wait for clk_period * 20;
+    
+--    num_in <= "00000011";       -- 1 (an 8 bit prime number)
+--    seed <= "00101011";         -- set seed
+--    en <= '1';
+--    wait for clk_period;
+--    en <= '0';
+--    wait for clk_period * 20;
 
 
     wait;

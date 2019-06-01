@@ -33,7 +33,7 @@ architecture Behavioral of SerialTx is
 	constant BAUD_COUNT : integer := CLOCK_FREQUENCY / BAUD_RATE;
 
     -- baud rate counter: 12 bits can handle 4800 baud at 10 MHz clock
-	signal br_cnt:		unsigned(11 downto 0) := x"000";																	
+	signal br_cnt:	unsigned(11 downto 0) := x"000";																	
 	signal br_tick:	std_logic;
 	
 	-- Parallel-to-serial register

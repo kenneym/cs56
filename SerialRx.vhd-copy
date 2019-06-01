@@ -31,61 +31,108 @@ use IEEE.NUMERIC_STD.ALL;
 entity SerialRx is
     Port (  clk    :       in STD_LOGIC;                       --the master clock
             RsRx     :      in STD_LOGIC;                       --serial data in
+--			rx_shift :		out STD_LOGIC;						-- for debugging
             rx_data  :      out STD_LOGIC_VECTOR(7 downto 0);   --parallel data out
             rx_done_tick :  out STD_LOGIC);                     --data ready (done tick)
 end SerialRx;
 
 architecture Behavioral of SerialRx is
 
-type state_type is (waits, shifts, writes);
-signal current_state, next_state : state_type := waits;
-signal c_count :integer := 0;
-signal s_count : unsigned(3 downto 0) := "0000";
-signal c_count_en, s_count_en, rx_done_en, out_en, first, c_count_r, s_count_r: STD_LOGIC := '0';
-signal rsrx_ff, rsrx_s : STD_LOGIC;
-constant baud : integer := 115200;
+
+-- Serial constants:
 constant clk_freq : integer := 10000000;
+constant baud : integer := 115200;
 constant n : integer := clk_freq/baud;
 constant n_half : integer := n/2;
+
+
+
+-- FSM Declaration:
+type state_type is (waits, shifts, writes, done_tick);
+signal current_state, next_state : state_type := waits;
+
+
+-- Counters:
+signal br_cnt : unsigned(11 downto 0) := x"000";
+signal br_tick, half_tick : STD_LOGIC;
+
+signal shift_cnt : unsigned(3 downto 0) := "0000"; -- number of bits shifted in (10 total)
+signal shift_cnt_en, out_en, shift_cnt_r, done_tick_en: STD_LOGIC := '0';
+signal rsrx_ff, rsrx_s : STD_LOGIC;
 signal shift_reg : STD_LOGIC_VECTOR(9 downto 0) := "0000000000";
 signal out_reg : STD_LOGIC_VECTOR(7 downto 0) := "00000000";
 
+-- test signals
+
+
+
 begin
-    nextStateLogic: process(current_state, RsRx, RsRx_S, c_count, s_count, first)
-    begin
+
+	BaudRateClock:
+	process(Clk)
+	begin
+		if rising_edge(Clk) then
+
+			if br_cnt = n_half -1 then
+				half_tick <= '1';
+			end if;
+
+			if br_cnt = n-1 then
+				br_cnt <= x"000";
+				br_tick <= '1';     -- emit tick every BAUD_COUNT clock cycles
+			else
+				br_cnt <= br_cnt+1;
+				br_tick <= '0';
+			end if;
+
+		end if;
+	end process BaudRateClock;
+
+
+
+
+    nextStateLogic: process(current_state, RsRx, RsRx_S, shift_cnt, br_tick, half_tick)
+	begin
+
         next_state <= current_state;
-        c_count_en <= '0';
-        s_count_en <= '0';
+
+        shift_cnt_en <= '0';
         out_en <= '0';
-        rx_done_en <= '0';
-        c_count_r <= '0';
-        s_count_r <= '0';
-        case (current_state) is
+        shift_cnt_r <= '0';
+        done_tick_en <= '0';
+
+		case (current_state) is
+			
             when waits =>
-                c_count_r <= '1';
-                s_count_r <= '1';
-                first <= '0';
+
+                shift_cnt_r <= '1';
                 if RsRx_S = '0' then
                     next_state <= shifts;
                 end if;
+
             when shifts =>
-                c_count_en <= '1';
-                if c_count = n_half then
-                    if first = '0' then
-                        s_count_en <= '1';
-                        first <= '1';
+
+				if half_tick = '1' then
+					if shift_cnt = "0000" then -- first count
+                        shift_cnt_en <= '1';
                     end if;
-                elsif c_count = n then
-                    s_count_en <= '1';
-                    c_count_r <= '1';
+
+                elsif br_tick = '1' then
+                    shift_cnt_en <= '1';
                 end if;
-                if s_count = "1010" then
+
+                if shift_cnt = "1010" then
                     next_state <= writes;
                 end if;
+
             when writes =>
                 out_en <= '1';
-                rx_done_en <= '1';
+                next_state <= done_tick;
+                
+            when done_tick =>
+                done_tick_en <= '1';
                 next_state <= waits;
+
          end case; 
     end process nextStateLogic;
     
@@ -104,27 +151,28 @@ begin
             current_state <= next_state;
 
 			rx_done_tick <= '0';
+			--rx_shift <= '0'; -- for debugging
 
-            if c_count_en = '1' then
-                c_count <= c_count + 1;
-            end if;
-            if s_count_en = '1' then
-                s_count <= s_count + 1;
+            if shift_cnt_en = '1' then
+                shift_cnt <= shift_cnt + 1;
+			--	rx_shift <= '1'; 	-- for debugging
                 shift_reg <= RsRx_s & shift_reg(9 downto 1);
             end if;
+
             if out_en = '1' then
-                out_reg <= shift_reg(7 downto 0);
+                out_reg <= shift_reg(8 downto 1);
             end if;
-            if rx_done_en = '1' then
+            
+            if done_tick_en = '1' then
                 rx_done_tick <= '1';
             end if;
-            if c_count_r = '1' then
-                c_count <= 0;
-            end if;
-            if s_count_r = '1' then
-                s_count <= "0000";
+
+            if shift_cnt_r = '1' then
+                shift_cnt <= "0000";
             end if;
         end if;
+
      end process stateUpdate;
      rx_data <= out_reg;
+
 end Behavioral;

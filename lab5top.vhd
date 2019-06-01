@@ -27,13 +27,19 @@ use UNISIM.Vcomponents.ALL;
 entity lab5top is
     Port ( Clk : in  STD_LOGIC;					-- 100 MHz board clock
            RsRx  : in  STD_LOGIC;				-- Rx input
-		   RsTx  : out  STD_LOGIC				-- Tx output
+		   RsTx  : out  STD_LOGIC;				-- Tx output
            --
            -- Testing ports
-           --clk10_p : out std_logic;				-- 10 MHz clock
-          -- RsRx_p : out std_logic;				-- serial data stream
-		   --rx_shift_p : out std_logic;			-- Rx register shift           
-		   --rx_done_tick_p : OUT  std_logic 
+    --       clk10_p : out std_logic;				-- 10 MHz clock
+    --       RsRx_p : out std_logic;				-- serial data stream
+	--	   rx_shift_p : out std_logic;			-- Rx register shift           
+	--	   rx_done_tick_p : OUT  std_logic;
+
+			-- Seven segment display (one digit)
+           seg : out STD_LOGIC_VECTOR (0 to 6);
+		   dp : out std_logic;
+           an : out std_logic_vector(3 downto 0)
+
 		   );	-- data ready
 end lab5top;
 
@@ -75,6 +81,16 @@ COMPONENT SerialTx is
            tx_done_tick : out  STD_LOGIC);
 end Component;
 
+component mux7seg is
+    Port ( clk : in  STD_LOGIC;									-- runs on a fast (100 MHz or so) clock
+           y0, y1, y2, y3 : in  STD_LOGIC_VECTOR (3 downto 0);	-- digits
+           dp_set : in std_logic_vector(3 downto 0);            -- decimal points
+           seg : out  STD_LOGIC_VECTOR(0 to 6);				    -- segments (a...g)
+           dp : out std_logic;
+           an : out  STD_LOGIC_VECTOR (3 downto 0) );			-- anodes
+end component;
+
+
 -------------------------
 	
 begin
@@ -110,7 +126,7 @@ Receiver: SerialRx PORT MAP(
 		RsRx => RsRx,
 --		rx_shift => rx_shift_p,		-- testing port
 		rx_data => rx_data,
-		rx_done_tick => rx_done_tick  );
+		rx_done_tick => rx_done_tick);
 
 -- Add SerialTx and Mux7seg here
 
@@ -123,6 +139,15 @@ Transmitter: SerialTx PORT MAP(
 		tx => RsTx,
 		tx_done_tick => open);
 
+
+display: mux7seg port map(
+			clk=>clk,			-- has its own clock divider built-in
+			y0=>rx_data(7 downto 4), 
+			y1=>rx_data(3 downto 0), 
+			y2=>"0000", 
+			y3=>"0000",
+			dp_set=>"0000",
+			seg=>seg, dp=>dp, an=>an);
 
 		
 end Structural;

@@ -38,24 +38,25 @@ architecture testbench of rsatop_tb is
 
 component rsatop is
 	Generic ( key_size : integer := 32);
-    Port ( Clk : in  STD_LOGIC;					-- 100 MHz board clock
-           RsRx  : in  STD_LOGIC;				-- Rx input
-
-		   rx_test_data : in STD_LOGIC_VECTOR(7 downto 0);
-		   rx_test_done_tick : in STD_LOGIC;
-	       tx_test_data : out STD_LOGIC_VECTOR(24 downto 0);
+	 Port ( Clk : in  STD_LOGIC;					-- 100 MHz board clock
+           
+		   RsRx  : in  STD_LOGIC;				-- Rx input
+		   RsTx  : out  STD_LOGIC;
 
 		   gen_key : in STD_LOGIC; 				-- push-button mp signal to generate a key
-		   enc_dec : in STD_LOGIC;				-- switch: enc = '1', dec = '0'
 		   key_ready : out STD_LOGIC;
-		   RsTx  : out  STD_LOGIC);				-- Tx output
+		   encrypt_start : out STD_LOGIC := '0';
+		   decrypt_start : out STD_LOGIC := '0';
+
+		   -- Seven segment display (one digit)
+           seg : out STD_LOGIC_VECTOR (0 to 6);
+		   dp : out std_logic;
+           an : out std_logic_vector(3 downto 0)
+		   );				-- Tx output
 end component;
 
-signal clk, RsRx, gen_key, enc_dec, key_ready, RsTx : STD_LOGIC := '0';
+signal clk, RsRx, RsTx, gen_key, key_ready, encrypt_start, decrypt_start : STD_LOGIC := '0';
 signal clk_period : time := 10 ns;
-signal rx_test_data: STD_LOGIC_VECTOR(7 downto 0) := (others => '0');
-signal tx_test_data : STD_LOGIC_VECTOR(24 downto 0) := (others => '0');
-signal rx_test_done_tick : STD_LOGIC := '0';
 
 
 begin
@@ -64,16 +65,16 @@ uut: rsatop
 GENERIC MAP ( key_size => key_size)
 PORT MAP( clk => clk,
 		  RsRx => RsRx,
+		  RsTx => RsTx,
 
 		  -- Test variables
-		  rx_test_data => rx_test_data,
-		  rx_test_done_tick => rx_test_done_tick,
-		  tx_test_data => tx_test_data,
-
 		  gen_key => gen_key,
-		  enc_dec => enc_dec,
 		  key_ready => key_ready,
-		  RsTx => RsTx);
+		  encrypt_start => encrypt_start,
+		  decrypt_start => decrypt_start,
+		  seg => open,
+		  dp => open,
+		  an => open);
 
 clk_proc : process
 BEGIN
@@ -87,51 +88,12 @@ end process clk_proc;
 stim_proc : process
 begin
 
+    RsRx <= '1';
 	gen_key <= '1';
 	wait for clk_period * 3;
 	gen_key <= '0';
 
 	wait for 100 ms;
-
-	enc_dec <= '1';
-	rx_test_data <= "01000001"; --a
-	rx_test_done_tick <= '1';
-	wait for clk_period;
-	rx_test_done_tick <= '0';
-	wait for clk_period;
-
-	rx_test_data <= "01000010"; --b
-	rx_test_done_tick <= '1';
-	wait for clk_period;
-	rx_test_done_tick <= '0';
-	wait for clk_period;
-
-	rx_test_data <= "01000011"; --c
-	rx_test_done_tick <= '1';
-	wait for clk_period;
-	rx_test_done_tick <= '0';
-	wait for clk_period;
-
---	rx_test_data <= "01000100"; --d
---	rx_test_done_tick <= '1';
---	wait for clk_period;
---	rx_test_done_tick <= '0';
---
---	rx_test_data <= "01100101"; --e
---	rx_test_done_tick <= '1';
---	wait for clk_period;
---	rx_test_done_tick <= '0';
---
---	rx_test_data <= "01100110"; --f
---	rx_test_done_tick <= '1';
---	wait for clk_period;
---	rx_test_done_tick <= '0';
---
---	rx_test_data <= "01100111"; --g
---	rx_test_done_tick <= '1';
---	wait for clk_period;
---	rx_test_done_tick <= '0';
-
 
     wait;
 

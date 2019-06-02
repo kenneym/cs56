@@ -19,28 +19,30 @@ end extgcd;
 
 architecture Behavioral of extgcd is
 
-type state_type is (nop, divide, hold, check);
+type state_type is (nop, divide, hold, check, update_xy);
 signal current_state, next_state : state_type := nop;
 
 signal a, b, r, pad : UNSIGNED(data_size -1 downto 0) :=  (others => '0');  		-- To compute gcd
 signal x : SIGNED(data_size * 2 -1 downto 0) :=  (others => '0');               	-- Extended portion
 signal y : SIGNED(data_size * 2 -1 downto 0) :=  (0 => '1', others => '0');    		-- Extended portion
-signal prev_x : SIGNED(data_size * 2 -1 downto 0) :=  (0 => '1', others => '0');    		-- Extended portion
-signal prev_y : SIGNED(data_size * 2 -1 downto 0) :=  (others => '0');               	-- Extended portion
-
-signal mult_x : SIGNED((data_size * 4) -1 downto 0) := (others => '0');     -- large bit signals
-signal mult_y : SIGNED((data_size * 4) -1 downto 0) := (0 => '1', others => '0');     -- large bit signals
+signal prev_x : SIGNED(data_size * 2 -1 downto 0) :=  (0 => '1', others => '0');    -- Extended portion
+signal prev_y : SIGNED(data_size * 2 -1 downto 0) :=  (others => '0');              -- Extended portion
+signal mult_x : SIGNED((data_size * 4) -1 downto 0) := (others => '0');     		-- large bit signals
+signal mult_y : SIGNED((data_size * 4) -1 downto 0) := (0 => '1', others => '0');   -- large bit signals
 
 signal q : UNSIGNED(data_size * 2 -1 downto 0) :=  (others => '0');
 
                                                                             		-- used for multiplication
 
-signal mod_en, load_en, output_en, iterate_en, fetch_en : STD_LOGIC := '0';			-- Enable signals
+signal mod_en, load_en, output_en, iterate_en, fetch_en, update_en: STD_LOGIC := '0';			-- Enable signals
     
 
 -- Interface with modulus component
 signal mod_data, mod_finished: STD_LOGIC;
 signal a_mod, b_mod, q_out, r_out : STD_LOGIC_VECTOR(data_size -1 downto 0);
+
+
+
 
 
 -- Computes a / b = q remainder r.
@@ -79,6 +81,7 @@ begin
 	output_en <= '0';
 	iterate_en <= '0';
 	fetch_en <= '0';
+	update_en <= '0';
 
 	
 	case (current_state) is
@@ -110,8 +113,12 @@ begin
 				next_state <= nop;
 			else
 				iterate_en <= '1';
-				next_state <= divide;
+				next_state <= update_xy;
 			end if;
+			
+		when update_xy =>
+		    update_en <= '1';
+		    next_state <= divide;
 
      end case;
 
@@ -125,6 +132,9 @@ begin
 end process state_update;
 
 
+		
+
+
 gcd_datapath: process(clk)
 begin
 	if rising_edge(clk) then
@@ -133,9 +143,11 @@ begin
 		mod_data <= '0';
 		done <= '0';
 --		y <= mult_y(mult_y'left) & mult_y(y'left - 1 downto 0);
-
-		x <= resize(mult_x, data_size * 2);
-		y <= resize(mult_y, data_size * 2);
+        
+        if update_en = '1' then
+		    x <= resize(mult_x, data_size * 2);
+		    y <= resize(mult_y, data_size * 2);
+		end if;
 		
 		if load_en = '1' then
 			done <= '0';

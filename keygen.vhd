@@ -169,7 +169,7 @@ begin
 		done => mod_done,
 		q_out => open,
 		r_out => d); 				-- y produced from extgcd algorithm produces secret key when moded by phi_n
-
+        
 
 	next_state_logic: process(current_state, load_en, pqgen_done, e, new_e, extgcd_done, mod_done, en, reset_seed, phi_n, big_one, gcd, extgcd_en, seed_en, rand_en, mod_en, pqgen_en)
 	begin

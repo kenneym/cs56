@@ -230,7 +230,8 @@ keygenerator : keygen
 GENERIC MAP(
 		key_size => key_size)
 PORT MAP(
-		clk => clk2,
+        clk => clk10,
+--		clk => clk2,
 		en => keygen_en,
 		seed_1 => seed_1,
 		seed_2 => seed_2,
@@ -244,7 +245,8 @@ enc_dec_module: modexp2
 generic map(
 	num_bits => key_size)
 port map(
-		clk => clk2,
+--		clk => clk2,
+        clk => clk10,
 		en => modexp_en,
 		x => msg, -- encrypt the message
 		y => key,
@@ -253,21 +255,21 @@ port map(
 		done => mod_exp_done);
 		
 		
-sync_rxdone : process(clk2)
-begin
-    if rising_edge(clk2) then
-        rx_done_sync <= '0';
+--sync_rxdone : process(clk2)
+--begin
+--    if rising_edge(clk2) then
+--        rx_done_sync <= '0';
         
-        if rx_done_tick = '1' then
-            tick_cnt <= tick_cnt + 1;
-        end if;
+--        if rx_done_tick = '1' then
+--            tick_cnt <= tick_cnt + 1;
+--        end if;
         
-        if tick_cnt = "010" then -- if we have 5 in a row (4 plus the current one)
-            tick_cnt <= "000";
-            rx_done_sync <= '1';
-        end if;
-    end if;
-end process;
+--        if tick_cnt = "010" then -- if we have 5 in a row (4 plus the current one)
+--            tick_cnt <= "000";
+--            rx_done_sync <= '1';
+--        end if;
+--    end if;
+--end process;
         
 
 -- NOTE  self: convert keygen's dbne signal to an mp for this module
@@ -385,9 +387,9 @@ end process next_state_logic;
 
 
 
-state_update: process(clk2)
+state_update: process(clk10)
 begin
-	if rising_edge(clk2) then
+	if rising_edge(clk10) then
         current_state <= next_state;
 	end if;
 end process state_update;
@@ -395,10 +397,10 @@ end process state_update;
 
 
 
-datapath: process(clk2)
+datapath: process(clk10)
 begin
 
-	if rising_edge(clk2) then
+	if rising_edge(clk10) then
 
 		keygen_start <= '0';
 		keygen_en <= '0';
@@ -429,7 +431,7 @@ begin
 		end if;
 
 		-- Count how many times new data comes in via SerialRx
-		if rx_done_sync = '1' then
+		if rx_done_tick = '1' then
 			num_letters <= num_letters + 1;
 			msg <= rx_data & msg(msg'left downto 8); -- right shift the new data in 		
 		end if;

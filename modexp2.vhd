@@ -49,7 +49,7 @@ signal res_temp, x_temp                          :       UNSIGNED(2*num_bits-1 d
 
 -- Interface with modulus component
 signal mod_data, mod_finished: STD_LOGIC;
-signal b_mod, r_out : STD_LOGIC_VECTOR(2*num_bits -1 downto 0);
+signal b_mod, r_out : STD_LOGIC_VECTOR(2*num_bits-1 downto 0);
 signal a_mod               : STD_LOGIC_VECTOR(2*num_bits-1 downto 0);
 signal a_mod_temp          : UNSIGNED(2*num_bits-1 downto 0);
 signal r_intermed          : STD_LOGIC_VECTOR(2*num_bits -1 downto 0);

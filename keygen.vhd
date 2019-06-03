@@ -118,6 +118,7 @@ signal new_e : STD_LOGIC := '0';
 
 -- Interface
 begin
+
 	pq_generator : pqgen 
 	generic map(
 	    num_bits => (key_size / 2))
@@ -366,7 +367,8 @@ begin
 			if check_y_sign_en = '1' then
 
 				if signed_y < signed_zero then
-					adjusted_y <= STD_LOGIC_VECTOR(-signed(y));
+					--adjusted_y <= STD_LOGIC_VECTOR(-signed(y));
+					adjusted_y <= STD_LOGIC_VECTOR(signed(y));
 				else
 					adjusted_y <= y;
 				end if;

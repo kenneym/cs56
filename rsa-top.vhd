@@ -201,9 +201,9 @@ end process Clock_divider2;
 display: mux7seg port map(
 			clk=>clk,			-- has its own clock divider built-in
 
-			y0=>n(31 downto 28), 
-			y1=>n(27 downto 24), 
-			y2=> n(23 downto 20), 
+			y0=>d(23 downto 20), 
+			y1=>d(27 downto 24), 
+			y2=> d(31 downto 28), 
 			y3=> num_letters_mux, 
 			dp_set=>"0000",
 			seg=>seg, dp=>dp, an=>an);

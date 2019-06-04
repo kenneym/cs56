@@ -72,8 +72,6 @@ signal adjusted_y : STD_LOGIC_VECTOR(key_size -1 downto 0);
 
 
 -- Interface with mod
-signal mod_en, mod_done : STD_LOGIC := '0';
-signal d : STD_LOGIC_VECTOR(key_size -1 downto 0);
 signal d_final : STD_LOGIC_VECTOR(key_size -1 downto 0); -- in case of negative y values (-num mod phi_n)
 
 
@@ -94,9 +92,9 @@ signal signed_zero: SIGNED(key_size -1 downto 0) := (others => '0');
 
 -- FSM:
 -- hold is a generic state to wait for modules to complete
-type state_type is (nop, gen_pq, hold, compute_n, try_e, test_e, check_y_sign, mod_n, compute_d, output);
+type state_type is (nop, gen_pq, hold, compute_n, try_e, test_e, compute_d, output);
 signal current_state, next_state : state_type := nop;
-signal load_en, compute_n_en, output_en, check_y_sign_en, compute_d_en, en_pqgen, en_rand, en_seed, en_extgcd, en_mod, new_e_disable: STD_LOGIC := '0'; -- enable signals 
+signal load_en, compute_n_en, output_en, compute_d_en, en_pqgen, en_rand, en_seed, en_extgcd, new_e_disable: STD_LOGIC := '0'; -- enable signals 
 signal reset_seed : STD_LOGIC := '1'; 			-- misc. internal control signals
 signal new_e : STD_LOGIC := '0';
 
@@ -145,21 +143,19 @@ begin
 									-- We can use y to compute the "multiplicative inverse mod n" of 'e': the secret key 'd'
 
 
-	next_state_logic: process(current_state, load_en, pqgen_done, e, new_e, extgcd_done, mod_done, en, reset_seed, phi_n, big_one, gcd, extgcd_en, seed_en, rand_en, mod_en, pqgen_en)
+	next_state_logic: process(current_state, load_en, pqgen_done, e, new_e, extgcd_done, en, reset_seed, phi_n, big_one, gcd, extgcd_en, seed_en, rand_en, pqgen_en)
 	begin
 
 		next_state <= current_state;
 
 		load_en <= '0';
 		compute_n_en <= '0';
-		check_y_sign_en <= '0';
 		compute_d_en <= '0';
 		output_en <= '0';
 
 
 		-- to components
 		en_pqgen <= '0';
-		en_mod <= '0';
 		en_rand <= '0';
 		en_seed <= '0';
 		en_extgcd <= '0';
@@ -186,9 +182,6 @@ begin
 
 				elsif extgcd_done = '1' then
 					next_state <= test_e;
-
-				elsif mod_done = '1' then
-					next_state <= compute_d;
 
 				end if;
 				
@@ -263,11 +256,9 @@ begin
 			p_unsigned <= UNSIGNED(p);
 			q_unsigned <= UNSIGNED(q);
 			signed_y <= SIGNED(y);
-			
-			
+
 			-- Enables to components:
 		    pqgen_en <= '0';
-		    mod_en <= '0';
 		    rand_en <= '0';
 		    seed_en <= '0';
 		    extgcd_en <= '0';
@@ -281,17 +272,14 @@ begin
 				rand_seed <= STD_LOGIC_VECTOR(UNSIGNED(rand_seed) + UNSIGNED(e)); -- add current random number to past seed to get a new seed
 			end if;
 
-
 			if seed_en = '1' then
 			    reset_seed <= '0';
 			end if;
 			
-
 		    -- enables interfacing with components
 		    if en_pqgen = '1' then
 		        pqgen_en <= '1';
 		    end if;
-		    
 		    
 		    if en_rand = '1' then
 		        new_e <= '1';
@@ -310,9 +298,6 @@ begin
 		        extgcd_en <= '1';
 		    end if;
 		
-		
-		
-		
 			if load_en = '1' then
 				n_out <= (others => '0');
 				e_out <= (others => '0');
@@ -328,24 +313,12 @@ begin
 			end if;
 			
 
-			if check_y_sign_en = '1' then
-
-				if signed_y < signed_zero then
-					--adjusted_y <= STD_LOGIC_VECTOR(-signed(y));
-					adjusted_y <= STD_LOGIC_VECTOR(signed(y));
-				else
-					adjusted_y <= y;
-				end if;
-			end if;
-
-
 			if compute_d_en = '1' then
 
-				d_final <= d;
-
+				d_final <= y;
 				-- If y was negative, corect the value of d to account for negative mod operation
 				if signed_y < signed_zero then
-					d_final <= STD_LOGIC_VECTOR(UNSIGNED(phi_n) - UNSIGNED(d));
+					d_final <= STD_LOGIC_VECTOR(UNSIGNED(phi_n) - (UNSIGNED(not(y)) + one));
 				end if;
 
 			end if;
@@ -363,6 +336,4 @@ begin
 
 
 end Behavioral;
-
-
 

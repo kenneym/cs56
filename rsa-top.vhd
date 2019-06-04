@@ -32,7 +32,7 @@ entity rsatop is
 		   RsTx  : out  STD_LOGIC;
 
 		   gen_key : in STD_LOGIC; 				-- push-button mp signal to generate a key
-		   key_ready : out STD_LOGIC := '1';
+		   key_ready : out STD_LOGIC := '0';
 		   encrypt_start : out STD_LOGIC := '0';
 		   decrypt_start : out STD_LOGIC := '0';
 		   

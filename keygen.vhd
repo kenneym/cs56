@@ -72,7 +72,7 @@ ARCHITECTURE Behavioral of keygen is
 
 
 -- Interface with pqgen component
-signal pqgen_en, pqgen_done : STD_LOGIC := '0';
+signal pqgen_en, pqgen_done, new_e_en, not_compute : STD_LOGIC := '0';
 signal p, q, pq_seed : STD_LOGIC_VECTOR((key_size / 2) -1 downto 0);
 --signal test_p : STD_LOGIC_VECTOR((key_size / 2) -1 downto 0) := "10001001"; -- 137
 --signal test_q : STD_LOGIC_VECTOR((key_size / 2) -1 downto 0) := "10111111"; -- 191
@@ -86,7 +86,7 @@ signal adjusted_y : STD_LOGIC_VECTOR(key_size -1 downto 0);
 
 
 -- Interface with mod
-signal mod_en, mod_done : STD_LOGIC := '0';
+signal mod_en, mod_done, try_again : STD_LOGIC := '0';
 signal d : STD_LOGIC_VECTOR(key_size -1 downto 0);
 signal d_final : STD_LOGIC_VECTOR(key_size -1 downto 0); -- in case of negative y values (-num mod phi_n)
 
@@ -104,15 +104,16 @@ signal p_unsigned, q_unsigned : UNSIGNED((key_size / 2) -1 downto 0);
 signal one : UNSIGNED((key_size / 2) -1 downto 0) :=  (0 => '1', others => '0'); 		-- represent the number 1
 signal big_one : STD_LOGIC_VECTOR(key_size -1 downto 0) :=  (0 => '1', others => '0'); 		-- represent the number 1
 signal signed_zero: SIGNED(key_size -1 downto 0) := (others => '0');
-
-
+signal neg_1: UNSIGNED(key_size-1 downto 0) := (0 => '1', others => '0');
+signal reverse_y: UNSIGNED(key_size-1 downto 0) := (others => '0');
+signal all_1: STD_LOGIC_VECTOR(key_size-1 downto 0) := (others => '1');
 -- FSM:
 -- hold is a generic state to wait for modules to complete
 type state_type is (nop, gen_pq, hold, compute_n, try_e, test_e, check_y_sign, mod_n, compute_d, output);
 signal current_state, next_state : state_type := nop;
 signal load_en, compute_n_en, output_en, check_y_sign_en, compute_d_en, en_pqgen, en_rand, en_seed, en_extgcd, en_mod, new_e_disable: STD_LOGIC := '0'; -- enable signals 
 signal reset_seed : STD_LOGIC := '1'; 			-- misc. internal control signals
-signal new_e : STD_LOGIC := '0';
+signal new_e, rand_res : STD_LOGIC := '0';
 
 
 
@@ -172,7 +173,7 @@ begin
 		r_out => d); 				-- y produced from extgcd algorithm produces secret key when moded by phi_n
         
 
-	next_state_logic: process(current_state, load_en, pqgen_done, e, new_e, extgcd_done, mod_done, en, reset_seed, phi_n, big_one, gcd, extgcd_en, seed_en, rand_en, mod_en, pqgen_en)
+	next_state_logic: process(current_state, load_en, pqgen_done, e, new_e, extgcd_done, mod_done, en, reset_seed, phi_n, big_one, gcd, extgcd_en, seed_en, rand_en, mod_en, pqgen_en, try_again, adjusted_y)
 	begin
 
 		next_state <= current_state;
@@ -191,7 +192,8 @@ begin
 		en_seed <= '0';
 		en_extgcd <= '0';
 		new_e_disable <= '0';
-
+		not_compute <= '0';
+        rand_res <= '0';
 
 		case(current_state) is
 
@@ -225,7 +227,7 @@ begin
 				next_state <= try_e;
 
 			when try_e =>
-				en_rand  <= '1';     --
+				en_rand  <= '1';
 				if reset_seed = '1' then
 					en_seed <= '1'; --
 				end if;
@@ -253,6 +255,7 @@ begin
 				    else 
 					   if gcd = big_one then
 						  next_state <= check_y_sign;
+						  check_y_sign_en <= '1';
 					   else
 						  next_state <= try_e;
 					   end if;
@@ -261,13 +264,21 @@ begin
 				end if;
 
 			when check_y_sign =>
-				check_y_sign_en <= '1';
-				next_state <= mod_n;
-
+				--check_y_sign_en <= '1';
+				if try_again = '1' then
+				    next_state <= try_e;
+				else
+				    next_state <= mod_n;
+                end if;
 			when mod_n => 
-				en_mod <= '1';
-				next_state <= hold;
-
+			    if (phi_n > adjusted_y) then
+--			         next_state <= try_e;
+			         rand_res <= '1';
+			         next_state <= try_e;
+			    else
+				    en_mod <= '1';
+				    next_state <= hold;
+                end if;
 			when compute_d =>
 				compute_d_en <= '1';
 				next_state <= output;
@@ -297,7 +308,7 @@ begin
 			p_unsigned <= UNSIGNED(p);
 			q_unsigned <= UNSIGNED(q);
 			signed_y <= SIGNED(y);
-			
+			--reverse_y <= (UNSIGNED(all_1 XOR y) + neg_1);
 			
 			-- Enables to components:
 		    pqgen_en <= '0';
@@ -305,6 +316,7 @@ begin
 		    rand_en <= '0';
 		    seed_en <= '0';
 		    extgcd_en <= '0';
+		    try_again <= '0';
 
 			-- monopulse done signal
 			done <= '0';
@@ -315,14 +327,22 @@ begin
 				rand_seed <= STD_LOGIC_VECTOR(UNSIGNED(rand_seed) + UNSIGNED(e)); -- add current random number to past seed to get a new seed
 			end if;
 			
+			if rand_res = '1' then
+				reset_seed <= '1';
+				rand_seed <= STD_LOGIC_VECTOR(UNSIGNED(rand_seed) + UNSIGNED(e)); -- add current random number to past seed to get a new seed
+			end if;
+			
 			if seed_en = '1' then
 			    reset_seed <= '0';
 			end if;
-			
 
 		    -- enables interfacing with components
 		    if en_pqgen = '1' then
 		        pqgen_en <= '1';
+		    end if;
+		    
+		    if not_compute = '1' then
+		      d_final <= y;
 		    end if;
 		    
 		    if en_mod = '1' then
@@ -365,10 +385,11 @@ begin
 			
 
 			if check_y_sign_en = '1' then
-
+                
 				if signed_y < signed_zero then
-					--adjusted_y <= STD_LOGIC_VECTOR(-signed(y));
-					adjusted_y <= STD_LOGIC_VECTOR(signed(y));
+--					adjusted_y <= STD_LOGIC_VECTOR(-signed(y));
+--					adjusted_y <= STD_LOGIC_VECTOR(reverse_y);
+					try_again <= '1';
 				else
 					adjusted_y <= y;
 				end if;

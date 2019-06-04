@@ -45,20 +45,6 @@ ARCHITECTURE Behavioral of keygen is
 				y_out 		: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0));
 	end component;
 
-
-	component modulus is
-		GENERIC(data_size  : integer := key_size); -- set for test key
-		-- Computes a / b = q remainder r.
-    	PORT (clk 		: 	in STD_LOGIC;
-    	      a_in 		: 	in STD_LOGIC_VECTOR(data_size - 1 downto 0); -- a should be >= b
-			  b_in  	: 	in STD_LOGIC_VECTOR(data_size - 1 downto 0);
-			  new_data	: 	in STD_LOGIC;
-			  ---------------------------------------------------------
-			  done 		: 	out STD_LOGIC;
-			  q_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0);
-			  r_out 	: 	out STD_LOGIC_VECTOR(data_size - 1 downto 0));
-	end component;
-
 	component LFSR
 		GENERIC( num_bits : integer := key_size);
 		PORT( clk 		: in STD_LOGIC;
@@ -158,19 +144,6 @@ begin
 									-- extgcd algorithm produces linear map (x,y) such that x(phi_n) + y(e) = gcd(phi_n,e) = 1
 									-- We can use y to compute the "multiplicative inverse mod n" of 'e': the secret key 'd'
 
-	-- to compute y mod phi of n
-	mod_component : modulus 
-	generic map(
-	    data_size => key_size)	
-	port map(
-		clk => clk,
-		a_in => adjusted_y,
-		b_in => phi_n,
-		new_data => mod_en,
-		done => mod_done,
-		q_out => open,
-		r_out => d); 				-- y produced from extgcd algorithm produces secret key when moded by phi_n
-        
 
 	next_state_logic: process(current_state, load_en, pqgen_done, e, new_e, extgcd_done, mod_done, en, reset_seed, phi_n, big_one, gcd, extgcd_en, seed_en, rand_en, mod_en, pqgen_en)
 	begin
@@ -252,7 +225,7 @@ begin
 				    -- if we've already found gcd(e, phi_n), test it
 				    else 
 					   if gcd = big_one then
-						  next_state <= check_y_sign;
+						  next_state <= compute_d;
 					   else
 						  next_state <= try_e;
 					   end if;
@@ -260,13 +233,6 @@ begin
 				
 				end if;
 
-			when check_y_sign =>
-				check_y_sign_en <= '1';
-				next_state <= mod_n;
-
-			when mod_n => 
-				en_mod <= '1';
-				next_state <= hold;
 
 			when compute_d =>
 				compute_d_en <= '1';
@@ -314,7 +280,8 @@ begin
 				reset_seed <= '1';
 				rand_seed <= STD_LOGIC_VECTOR(UNSIGNED(rand_seed) + UNSIGNED(e)); -- add current random number to past seed to get a new seed
 			end if;
-			
+
+
 			if seed_en = '1' then
 			    reset_seed <= '0';
 			end if;
@@ -325,9 +292,6 @@ begin
 		        pqgen_en <= '1';
 		    end if;
 		    
-		    if en_mod = '1' then
-		        mod_en <= '1';
-		    end if;
 		    
 		    if en_rand = '1' then
 		        new_e <= '1';

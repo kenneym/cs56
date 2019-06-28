@@ -1,4 +1,0 @@
-16-bit test key: 12
-64-bit key: 46
-128-bit key: 92
-256-bit key: 369
